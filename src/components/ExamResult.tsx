@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Exam, ExamItem } from "@/lib/types";
+import type { FeedbackCategory, OpicFeedback } from "@/lib/feedback";
 import {
   countEnglishSentences,
   countEnglishWords,
@@ -16,6 +17,15 @@ import Footer from "./Footer";
 function formatTime(sec: number): string {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
 }
+
+const feedbackCategoryLabel: Record<FeedbackCategory, string> = {
+  storytelling: "스토리텔링",
+  detail: "활동·디테일",
+  emotion: "감정·의미",
+  delivery: "전달력",
+  pronunciation: "발음 체크",
+  grammar: "문법",
+};
 
 export interface AnswerRecording {
   url: string;
@@ -79,7 +89,7 @@ export default function ExamResult({
         <Badge tone="accent">{title}</Badge>
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">연습 결과</h1>
         <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-          문항별 질문, 받아쓰기 결과, 녹음본을 확인해 보세요.
+          문항별 질문, 받아쓰기 결과, 녹음본을 확인해 보세요. 원하는 답변만 AI 코칭을 받을 수 있습니다.
         </p>
 
         <dl className="mt-6 grid grid-cols-2 gap-3 border-t border-line pt-5 text-center sm:grid-cols-4">
@@ -97,7 +107,7 @@ export default function ExamResult({
           전체 단어는 반복을 포함하고, 고유 단어는 대소문자를 무시한 중복 제거 기준입니다. 문장 수는 받아쓰기 텍스트의 문장부호를 기준으로 계산합니다.
         </p>
         <p className="mt-2 text-xs leading-relaxed text-fg-muted">
-          실전에는 지문 보기가 없습니다. 힌트 사용이 0회에 가까워질수록 실제 시험에 가까운 연습입니다.
+          AI 코칭은 문법 채점보다 <strong className="font-semibold text-fg">핵심 주제 → 활동·예시·디테일 → 감정·의미</strong> 흐름과 전달력을 우선합니다. 문법은 의미 전달을 크게 방해하는 경우만 지적하도록 설정했습니다.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
@@ -143,8 +153,49 @@ function ItemResult({
   recording?: AnswerRecording;
 }) {
   const [open, setOpen] = useState(false);
+  const [feedback, setFeedback] = useState<OpicFeedback | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
   const hasAnswer = answer.trim().length > 0;
   const extension = recording?.mimeType.includes("ogg") ? "ogg" : "webm";
+
+  async function requestFeedback() {
+    if (!hasAnswer || feedbackLoading) return;
+    setFeedbackLoading(true);
+    setFeedbackError(null);
+
+    try {
+      const body = new FormData();
+      body.append("question", item.question.en);
+      body.append("topic", `${item.topicKo} / ${item.topicEn}`);
+      body.append("type", item.typeLabel);
+      body.append("transcript", answer);
+      body.append("elapsedSec", String(elapsed));
+
+      if (recording) {
+        try {
+          const audioResponse = await fetch(recording.url);
+          const blob = await audioResponse.blob();
+          if (blob.size > 0) {
+            body.append("audio", blob, `yumi-opic-question-${item.slot}.${extension}`);
+          }
+        } catch {
+          // 녹음본 전송이 실패해도 텍스트 피드백은 받을 수 있다.
+        }
+      }
+
+      const response = await fetch("/api/feedback", { method: "POST", body });
+      const payload = (await response.json().catch(() => null)) as (OpicFeedback & { error?: string }) | null;
+      if (!response.ok || !payload || payload.error) {
+        throw new Error(payload?.error || "AI 피드백을 불러오지 못했습니다.");
+      }
+      setFeedback(payload);
+    } catch (error) {
+      setFeedbackError(error instanceof Error ? error.message : "AI 피드백을 불러오지 못했습니다.");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }
 
   return (
     <Card className="overflow-hidden">
@@ -180,17 +231,98 @@ function ItemResult({
           )}
 
           {hasAnswer ? (
-            <div className="mt-5 rounded-xl border border-line bg-surface-2 px-4 py-3">
-              <p className="text-[11px] tracking-widest text-fg-subtle">
-                내 답변 · {countEnglishWords(answer)}단어 · 고유 {countUniqueEnglishWords(answer)}단어 · {countEnglishSentences(answer)}문장 · {formatTime(elapsed)} · 다시 듣기 {replays}회 · 힌트 {hints}회
-              </p>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">{answer}</p>
-            </div>
+            <>
+              <div className="mt-5 rounded-xl border border-line bg-surface-2 px-4 py-3">
+                <p className="text-[11px] tracking-widest text-fg-subtle">
+                  내 답변 · {countEnglishWords(answer)}단어 · 고유 {countUniqueEnglishWords(answer)}단어 · {countEnglishSentences(answer)}문장 · {formatTime(elapsed)} · 다시 듣기 {replays}회 · 힌트 {hints}회
+                </p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-fg-muted">{answer}</p>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-line px-4 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-fg">AI 스토리텔링 코치</p>
+                    <p className="mt-1 text-xs leading-relaxed text-fg-subtle">최대 5개만, 전달력에 영향이 큰 것부터 봅니다.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={requestFeedback}
+                    disabled={feedbackLoading}
+                    className="rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-primary-fg transition-colors hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {feedbackLoading ? "분석 중…" : feedback ? "다시 분석" : "AI 피드백 받기"}
+                  </button>
+                </div>
+
+                {feedbackError && (
+                  <p role="alert" className="mt-3 rounded-lg border border-line bg-surface-2 px-3 py-2 text-xs leading-relaxed text-fg-muted">
+                    {feedbackError}
+                  </p>
+                )}
+
+                {feedback && (
+                  <div className="mt-4 border-t border-line pt-4">
+                    <div className="flex flex-wrap gap-2">
+                      <FlowChip label="핵심 주제" good={feedback.structure.topic === "good"} />
+                      <FlowChip label="활동·디테일" good={feedback.structure.detail === "good"} />
+                      <FlowChip label="감정·의미" good={feedback.structure.feeling === "good"} />
+                    </div>
+                    <p className="mt-3 text-sm font-medium leading-relaxed text-fg">{feedback.overall}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-fg-muted">{feedback.structure.note}</p>
+
+                    {feedback.pronunciationBasis === "audio_compare" ? (
+                      <p className="mt-3 text-[11px] leading-relaxed text-fg-subtle">
+                        발음 항목은 녹음본을 별도로 재전사해 브라우저 받아쓰기와 비교한 점검 신호입니다. 두 음성인식 모두 틀릴 수 있으므로 확정 판정으로 보지는 마세요.
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-[11px] leading-relaxed text-fg-subtle">
+                        별도 녹음 재전사가 없으면 텍스트만 보고 발음 오류를 추정하지 않습니다.
+                      </p>
+                    )}
+
+                    {feedback.items.length > 0 ? (
+                      <ol className="mt-4 space-y-3">
+                        {feedback.items.slice(0, 5).map((entry, idx) => (
+                          <li key={`${entry.category}-${idx}`} className="rounded-lg bg-surface-2 px-3.5 py-3">
+                            <div className="flex items-start gap-2">
+                              <span className="mt-0.5 shrink-0 rounded-md border border-line px-1.5 py-0.5 text-[10px] font-semibold text-fg-subtle">
+                                {feedbackCategoryLabel[entry.category]}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-fg">{entry.title}</p>
+                                <p className="mt-1 text-xs leading-relaxed text-fg-muted">{entry.message}</p>
+                                {entry.example && (
+                                  <p className="mt-2 rounded-md border border-line bg-surface px-2.5 py-2 text-xs leading-relaxed text-fg">
+                                    {entry.example}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="mt-4 text-xs text-fg-muted">지금 답변에서 꼭 고칠 만한 큰 문제는 찾지 않았습니다.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <p className="mt-4 text-sm text-fg-subtle">아직 답변하지 않았습니다.</p>
           )}
         </div>
       )}
     </Card>
+  );
+}
+
+function FlowChip({ label, good }: { label: string; good: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-[11px] text-fg-muted">
+      <span className="font-semibold text-fg">{good ? "✓" : "△"}</span>
+      {label} {good ? "좋음" : "보강"}
+    </span>
   );
 }
