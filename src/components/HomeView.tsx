@@ -16,6 +16,12 @@ import {
 import Footer from "./Footer";
 import { Badge, Card } from "./ui";
 
+function formatTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export default function HomeView() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -54,7 +60,8 @@ export default function HomeView() {
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-ink-300">
           서베이 주제 · 돌발 · 롤플레이 · 고난도를 실제 콤보 구조 그대로 섞어
           시험지를 만듭니다. 문제는 텍스트로 보고 (원하면 브라우저가 영어로
-          읽어줍니다), 답변은 타이핑하거나 마이크로 말하면 바로 채점됩니다.
+          읽어줍니다), 답변은 타이핑하거나 마이크로 말한 뒤 한자리에 모아
+          다시 읽어볼 수 있습니다.
           현재 문제 은행에 <strong className="text-ink-100">{totalQuestionCount}문항</strong>이
           들어 있고, 그중{" "}
           <strong className="text-emerald-300">{verifiedQuestionCount}문항</strong>은
@@ -181,11 +188,11 @@ export default function HomeView() {
                 <span className="tabular-nums text-ink-400">
                   {entry.answered}/{entry.totalItems}문항
                 </span>
-                <span className="w-24 shrink-0 text-right font-medium">
-                  {entry.average}점
+                <span className="w-24 shrink-0 text-right tabular-nums text-ink-400">
+                  {entry.totalWords ?? 0}단어
                 </span>
-                <span className="w-28 shrink-0 text-right text-xs text-accent-400">
-                  {entry.level}
+                <span className="w-20 shrink-0 text-right text-xs tabular-nums text-ink-500">
+                  {formatTime(entry.totalSec ?? 0)}
                 </span>
               </div>
             ))}

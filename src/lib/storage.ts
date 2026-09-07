@@ -54,8 +54,10 @@ export interface HistoryEntry {
   label: string;
   answered: number;
   totalItems: number;
-  average: number;
-  level: string;
+  /** 작성한 답변의 총 단어 수 */
+  totalWords: number;
+  /** 총 소요 시간(초) */
+  totalSec: number;
 }
 
 export function loadHistory(): HistoryEntry[] {

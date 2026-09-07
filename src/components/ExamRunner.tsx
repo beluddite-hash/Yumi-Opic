@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Exam, QuestionType, ScoreResult } from "@/lib/types";
-import { scoreAnswer } from "@/lib/scoring";
+import type { Exam, QuestionType } from "@/lib/types";
 import {
   isSpeechRecognitionSupported,
   isSpeechSynthesisSupported,
@@ -29,6 +28,7 @@ const TIME_TARGET: Record<QuestionType, number> = {
   comparison: 120,
 };
 
+/** 유형별 권장 분량(단어) — 점수가 아니라 "이 정도는 말해 보자"는 기준선 */
 const WORD_TARGET: Record<QuestionType, number> = {
   intro: 95,
   description: 130,
@@ -156,18 +156,6 @@ export default function ExamRunner({
     setListening(true);
   }
 
-  const scores = useMemo<Record<number, ScoreResult>>(() => {
-    if (!submitted) return {};
-    const result: Record<number, ScoreResult> = {};
-    for (const it of exam.items) {
-      const text = answers[it.slot] ?? "";
-      if (text.trim().length > 0) {
-        result[it.slot] = scoreAnswer(text, it.question.type);
-      }
-    }
-    return result;
-  }, [submitted, answers, exam.items]);
-
   function submit() {
     stopDictation();
     stopSpeaking();
@@ -182,7 +170,6 @@ export default function ExamRunner({
         title={title}
         answers={answers}
         times={times}
-        scores={scores}
         onRetry={() => {
           setSubmitted(false);
           setIndex(0);
@@ -365,7 +352,7 @@ export default function ExamRunner({
         />
 
         <div className="mt-2">
-          <ProgressBar value={words} max={wordTarget} tone="score" />
+          <ProgressBar value={words} max={wordTarget} />
         </div>
 
         {listening && (
@@ -377,7 +364,7 @@ export default function ExamRunner({
         {micAvailable === false && (
           <p className="mt-2 text-xs text-ink-500">
             마이크 받아쓰기는 Chrome · Edge에서만 동작합니다. 타이핑으로 연습해도
-            채점은 동일합니다.
+            됩니다.
           </p>
         )}
       </div>
@@ -410,7 +397,7 @@ export default function ExamRunner({
               onClick={submit}
               className="rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-medium text-ink-950 transition hover:bg-emerald-400"
             >
-              채점하기
+              답변 모아 보기
             </button>
           )}
         </div>

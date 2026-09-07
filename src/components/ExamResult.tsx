@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { Exam, ScoreResult } from "@/lib/types";
-import { summarizeExam } from "@/lib/scoring";
+import type { Exam } from "@/lib/types";
 import { pushHistory } from "@/lib/storage";
-import { Badge, Card, ProgressBar, ScoreRing, SourceBadge } from "./ui";
+import { Badge, Card, SourceBadge } from "./ui";
 
 function formatTime(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -13,12 +12,15 @@ function formatTime(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function countWords(text: string): number {
+  return (text.match(/[A-Za-z][A-Za-z'-]*/g) ?? []).length;
+}
+
 export default function ExamResult({
   exam,
   title,
   answers,
   times,
-  scores,
   onRetry,
   onRegenerate,
 }: {
@@ -26,14 +28,17 @@ export default function ExamResult({
   title: string;
   answers: Record<number, string>;
   times: Record<number, number>;
-  scores: Record<number, ScoreResult>;
   onRetry: () => void;
   onRegenerate?: () => void;
 }) {
-  const scored = exam.items
-    .map((it) => scores[it.slot])
-    .filter((s): s is ScoreResult => Boolean(s));
-  const summary = summarizeExam(scored);
+  const answered = exam.items.filter(
+    (it) => (answers[it.slot] ?? "").trim().length > 0,
+  );
+  const totalWords = exam.items.reduce(
+    (sum, it) => sum + countWords(answers[it.slot] ?? ""),
+    0,
+  );
+  const totalTime = exam.items.reduce((sum, it) => sum + (times[it.slot] ?? 0), 0);
   const saved = useRef(false);
 
   useEffect(() => {
@@ -44,16 +49,14 @@ export default function ExamResult({
       finishedAt: Date.now(),
       mode: exam.mode,
       label: title,
-      answered: scored.length,
+      answered: answered.length,
       totalItems: exam.items.length,
-      average: summary.average,
-      level: summary.level,
+      totalWords,
+      totalSec: totalTime,
     });
     // 결과 화면 진입 시 한 번만 저장한다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const totalTime = exam.items.reduce((sum, it) => sum + (times[it.slot] ?? 0), 0);
 
   return (
     <main className="mx-auto w-full max-w-3xl px-5 pb-24 pt-8 sm:px-8">
@@ -61,33 +64,26 @@ export default function ExamResult({
         ← 홈
       </Link>
 
-      {/* 총평 */}
+      {/* 요약 */}
       <Card className="animate-fade-up mt-5 p-6 sm:p-8">
-        <div className="flex flex-wrap items-center gap-6">
-          <ScoreRing score={summary.average} />
-          <div className="min-w-0 flex-1">
-            <Badge tone="accent">추정 등급 · {summary.level}</Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-              평균 {summary.average}점
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-ink-300">
-              {summary.levelNote}
-            </p>
-          </div>
-        </div>
+        <Badge tone="accent">연습 기록</Badge>
+        <h1 className="mt-3 text-2xl font-semibold tracking-tight">{title}</h1>
+        <p className="mt-2 text-sm leading-relaxed text-ink-300">
+          작성한 답변을 아래에서 다시 읽어 보세요. 자동 채점은 제공하지 않습니다 —
+          실제 OPIc 등급은 발음·유창성·상호작용까지 사람이 평가하는 영역이라
+          텍스트만으로 매긴 점수는 오히려 감을 흐립니다.
+        </p>
 
         <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-ink-800 pt-5 text-center">
           <div>
             <dt className="text-xs text-ink-400">작성한 문항</dt>
             <dd className="mt-1 text-lg font-medium tabular-nums">
-              {scored.length}/{exam.items.length}
+              {answered.length}/{exam.items.length}
             </dd>
           </div>
           <div>
             <dt className="text-xs text-ink-400">총 단어 수</dt>
-            <dd className="mt-1 text-lg font-medium tabular-nums">
-              {summary.totalWords}
-            </dd>
+            <dd className="mt-1 text-lg font-medium tabular-nums">{totalWords}</dd>
           </div>
           <div>
             <dt className="text-xs text-ink-400">총 소요 시간</dt>
@@ -117,9 +113,9 @@ export default function ExamResult({
         </div>
       </Card>
 
-      {/* 문항별 결과 */}
+      {/* 문항별 답변 */}
       <h2 className="mt-10 text-sm font-semibold uppercase tracking-widest text-ink-400">
-        문항별 채점
+        문항별 답변
       </h2>
       <div className="mt-4 space-y-4">
         {exam.items.map((item) => (
@@ -133,7 +129,6 @@ export default function ExamResult({
             questionKo={item.question.ko}
             answer={answers[item.slot] ?? ""}
             elapsed={times[item.slot] ?? 0}
-            score={scores[item.slot]}
           />
         ))}
       </div>
@@ -150,7 +145,6 @@ function ItemResult({
   source,
   answer,
   elapsed,
-  score,
 }: {
   slot: number;
   typeLabel: string;
@@ -160,9 +154,10 @@ function ItemResult({
   questionKo: string;
   answer: string;
   elapsed: number;
-  score?: ScoreResult;
 }) {
   const [open, setOpen] = useState(false);
+  const words = countWords(answer);
+  const written = answer.trim().length > 0;
 
   return (
     <Card className="overflow-hidden">
@@ -178,17 +173,9 @@ function ItemResult({
           <span className="block truncate text-sm text-ink-200">{typeLabel}</span>
           <span className="block truncate text-xs text-ink-500">{topic}</span>
         </span>
-        {score ? (
-          <span
-            className={`shrink-0 text-lg font-semibold tabular-nums ${
-              score.total >= 75
-                ? "text-emerald-400"
-                : score.total >= 50
-                  ? "text-amber-400"
-                  : "text-rose-400"
-            }`}
-          >
-            {score.total}
+        {written ? (
+          <span className="shrink-0 text-xs tabular-nums text-ink-400">
+            {words}단어 · {formatTime(elapsed)}
           </span>
         ) : (
           <span className="shrink-0 text-xs text-ink-500">미작성</span>
@@ -202,66 +189,17 @@ function ItemResult({
           <p className="mt-3 text-sm leading-relaxed text-ink-200">{questionEn}</p>
           <p className="mt-2 text-xs leading-relaxed text-ink-500">{questionKo}</p>
 
-          {score ? (
-            <>
-              <div className="mt-5 space-y-3">
-                {score.breakdown.map((b) => (
-                  <div key={b.key}>
-                    <div className="flex items-baseline justify-between gap-3 text-xs">
-                      <span className="text-ink-300">{b.label}</span>
-                      <span className="tabular-nums text-ink-400">
-                        {b.score} / {b.max}
-                      </span>
-                    </div>
-                    <div className="mt-1.5">
-                      <ProgressBar value={b.score} max={b.max} tone="score" />
-                    </div>
-                    <p className="mt-1 text-[11px] leading-relaxed text-ink-500">
-                      {b.comment}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {score.good.length > 0 && (
-                <div className="mt-5">
-                  <p className="text-xs font-semibold text-emerald-400">잘한 점</p>
-                  <ul className="mt-2 space-y-1">
-                    {score.good.map((g) => (
-                      <li key={g} className="text-xs leading-relaxed text-ink-300">
-                        · {g}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {score.improve.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-xs font-semibold text-amber-400">보완할 점</p>
-                  <ul className="mt-2 space-y-1">
-                    {score.improve.map((i) => (
-                      <li key={i} className="text-xs leading-relaxed text-ink-300">
-                        · {i}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="mt-5 rounded-xl border border-ink-800 bg-ink-950/60 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-widest text-ink-500">
-                  내 답변 · {formatTime(elapsed)}
-                </p>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-300">
-                  {answer}
-                </p>
-              </div>
-            </>
+          {written ? (
+            <div className="mt-5 rounded-xl border border-ink-800 bg-ink-950/60 px-4 py-3">
+              <p className="text-[11px] uppercase tracking-widest text-ink-500">
+                내 답변 · {words}단어 · {formatTime(elapsed)}
+              </p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-300">
+                {answer}
+              </p>
+            </div>
           ) : (
-            <p className="mt-4 text-sm text-ink-500">
-              답변을 작성하지 않아 채점하지 않았습니다.
-            </p>
+            <p className="mt-4 text-sm text-ink-500">답변을 작성하지 않았습니다.</p>
           )}
         </div>
       )}

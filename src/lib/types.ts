@@ -79,27 +79,3 @@ export interface AnswerRecord {
   /** 실제 답변에 쓴 시간(초) */
   elapsedSec: number;
 }
-
-export interface ScoreBreakdown {
-  key: string;
-  label: string;
-  score: number;
-  max: number;
-  comment: string;
-}
-
-export interface ScoreResult {
-  total: number;
-  level: string;
-  levelNote: string;
-  breakdown: ScoreBreakdown[];
-  good: string[];
-  improve: string[];
-  stats: {
-    words: number;
-    sentences: number;
-    avgSentenceLength: number;
-    uniqueRatio: number;
-    connectors: string[];
-  };
-}
