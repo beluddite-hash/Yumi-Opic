@@ -274,6 +274,86 @@ export const surveyPracticeSets: Partial<Record<string, readonly FixedPracticeSe
       {"slot":19,"displayNumber":"15","questionId":"park-advanced2-q15"},
     ] },
   ],
+  recycling: [
+    { label: "COMBO 1", items: [
+      { slot: 1, displayNumber: "2", questionId: "recycling-combo1-q2" },
+      { slot: 2, displayNumber: "3", questionId: "recycling-combo1-q3" },
+      { slot: 3, displayNumber: "4", questionId: "recycling-combo1-q4" },
+    ] },
+    { label: "COMBO 2", items: [
+      { slot: 4, displayNumber: "5", questionId: "recycling-combo2-q5" },
+      { slot: 5, displayNumber: "6", questionId: "recycling-combo2-q6" },
+      { slot: 6, displayNumber: "7", questionId: "recycling-combo2-q7" },
+    ] },
+    { label: "COMBO 3", items: [
+      { slot: 7, displayNumber: "8", questionId: "recycling-combo3-q8" },
+      { slot: 8, displayNumber: "9", questionId: "recycling-combo3-q9" },
+      { slot: 9, displayNumber: "10", questionId: "recycling-combo3-q10" },
+    ] },
+    { label: "ROLE-PLAY COMBO 1", items: [
+      { slot: 10, displayNumber: "11", questionId: "recycling-roleplay1-q11" },
+      { slot: 11, displayNumber: "12", questionId: "recycling-roleplay1-q12" },
+      { slot: 12, displayNumber: "13", questionId: "recycling-roleplay1-q13" },
+    ] },
+    { label: "ROLE-PLAY COMBO 2", items: [
+      { slot: 13, displayNumber: "11", questionId: "recycling-roleplay2-q11" },
+      { slot: 14, displayNumber: "12", questionId: "recycling-roleplay2-q12" },
+      { slot: 15, displayNumber: "13", questionId: "recycling-roleplay2-q13" },
+    ] },
+    { label: "ADVANCED COMBO 1", items: [
+      { slot: 16, displayNumber: "14", questionId: "recycling-advanced1-q14" },
+      { slot: 17, displayNumber: "15", questionId: "recycling-advanced1-q15" },
+    ] },
+    { label: "ADVANCED COMBO 2", items: [
+      { slot: 18, displayNumber: "14", questionId: "recycling-advanced2-q14" },
+      { slot: 19, displayNumber: "15", questionId: "recycling-advanced2-q15" },
+    ] },
+  ],
+  industry: [
+    { label: "COMBO 1", items: [
+      { slot: 1, displayNumber: "2", questionId: "industry-combo1-q2" },
+      { slot: 2, displayNumber: "3", questionId: "industry-combo1-q3" },
+      { slot: 3, displayNumber: "4", questionId: "industry-combo1-q4" },
+    ] },
+    { label: "COMBO 2", items: [
+      { slot: 4, displayNumber: "5", questionId: "industry-combo2-q5" },
+      { slot: 5, displayNumber: "6", questionId: "industry-combo2-q6" },
+      { slot: 6, displayNumber: "7", questionId: "industry-combo2-q7" },
+    ] },
+    { label: "COMBO 3", items: [
+      { slot: 7, displayNumber: "5", questionId: "industry-combo3-q5" },
+      { slot: 8, displayNumber: "6", questionId: "industry-combo3-q6" },
+      { slot: 9, displayNumber: "7", questionId: "industry-combo3-q7" },
+    ] },
+    { label: "COMBO 4", items: [
+      { slot: 10, displayNumber: "8", questionId: "industry-combo4-q8" },
+      { slot: 11, displayNumber: "9", questionId: "industry-combo4-q9" },
+      { slot: 12, displayNumber: "10", questionId: "industry-combo4-q10" },
+    ] },
+    { label: "COMBO 5", items: [
+      { slot: 13, displayNumber: "8", questionId: "industry-combo5-q8" },
+      { slot: 14, displayNumber: "9", questionId: "industry-combo5-q9" },
+      { slot: 15, displayNumber: "10", questionId: "industry-combo5-q10" },
+    ] },
+    { label: "ROLE-PLAY COMBO 1", items: [
+      { slot: 16, displayNumber: "11", questionId: "industry-roleplay1-q11" },
+      { slot: 17, displayNumber: "12", questionId: "industry-roleplay1-q12" },
+      { slot: 18, displayNumber: "13", questionId: "industry-roleplay1-q13" },
+    ] },
+    { label: "ROLE-PLAY COMBO 2", items: [
+      { slot: 19, displayNumber: "11", questionId: "industry-roleplay2-q11" },
+      { slot: 20, displayNumber: "12", questionId: "industry-roleplay2-q12" },
+      { slot: 21, displayNumber: "13", questionId: "industry-roleplay2-q13" },
+    ] },
+    { label: "ADVANCED COMBO 1", items: [
+      { slot: 22, displayNumber: "14", questionId: "industry-advanced1-q14" },
+      { slot: 23, displayNumber: "15", questionId: "industry-advanced1-q15" },
+    ] },
+    { label: "ADVANCED COMBO 2", items: [
+      { slot: 24, displayNumber: "14", questionId: "industry-advanced2-q14" },
+      { slot: 25, displayNumber: "15", questionId: "industry-advanced2-q15" },
+    ] },
+  ],
   staycation: [
     { label: "Q2–Q4", items: [
       { slot: 2, displayNumber: "2", questionId: "staycation-q2" },
