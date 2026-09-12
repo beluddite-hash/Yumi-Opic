@@ -5,7 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { Exam, ExamItem } from "@/lib/types";
 import {
   feedbackRewrite,
+  FEEDBACK_CRITERIA,
   readFeedbackResponse,
+  summarizeFeedback,
   type FeedbackResponse,
   type OpicFeedback,
 } from "@/lib/feedback";
@@ -24,12 +26,14 @@ import {
 } from "@/lib/answers";
 import { itemNumber } from "@/lib/exam";
 import { formatHistoryStamp } from "@/lib/history";
+import { savedReadPractices, type ReadPractice } from "@/lib/speakingActivity";
 import { recordingExtension, recordingFileName, recordingToMp3 } from "@/lib/mp3";
 import { examExitLink, nextPracticeLink } from "@/lib/nav";
 import { pushHistory, updateHistoryResult, type HistoryEntry, type SavedResult } from "@/lib/storage";
 import type { ExpressionDraft } from "@/lib/expressions";
 import { useSavedExpressions } from "./SavedExpressions";
 import FeedbackDetails from "./FeedbackDetails";
+import FeedbackProgress from "./FeedbackProgress";
 import { Badge, Card, ProgressBar, SourceBadge } from "./ui";
 import Footer from "./Footer";
 
@@ -170,6 +174,7 @@ export default function ExamResult({
   const [feedbackBySlot, setFeedbackBySlot] = useState<Record<number, OpicFeedback>>(historyEntry?.result?.feedback ?? {});
   // 고친 답변을 끝까지 따라 읽은 횟수. 답변·피드백과 같은 회차에 함께 쌓인다.
   const [readCounts, setReadCounts] = useState<Record<number, number>>(historyEntry?.result?.readCounts ?? {});
+  const [readPractices, setReadPractices] = useState<ReadPractice[]>(() => historyEntry ? savedReadPractices(historyEntry) : []);
   // 한 번에 받기가 차례를 기다리는 사이 개별 버튼으로 먼저 받은 문항을, 렌더를 기다리지 않고 알아보려고 둔다.
   // 피드백은 이 값을 고친 뒤 그대로 상태에 넘기므로 둘은 늘 같다.
   const feedbackRef = useRef(feedbackBySlot);
@@ -189,6 +194,7 @@ export default function ExamResult({
     exam, answers: answerBySlot, times, hintUse, replays, feedback: feedbackBySlot,
     ...(Object.keys(rewrites.browser).length ? { browserAnswers: rewrites.browser } : {}),
     ...(Object.keys(readCounts).length ? { readCounts } : {}),
+    readPractices,
   };
 
   const persist = useCallback((result: SavedResult) => {
@@ -220,12 +226,16 @@ export default function ExamResult({
   useEffect(() => {
     if (readOnly.current) return;
     persist(latestResult.current);
-  }, [persist, answerBySlot, times, rewrites, feedbackBySlot, readCounts]);
+  }, [persist, answerBySlot, times, rewrites, feedbackBySlot, readCounts, readPractices]);
 
   /** 한 문항을 끝까지 따라 읽었다. 지난 기록을 열어 읽어도 그 회차에 쌓인다. */
   const countRead = useCallback((slot: number) => {
+    const sentences = countEnglishSentences(feedbackRef.current[slot]?.improvedAnswer ?? "");
+    if (!sentences) return;
+    const practice = { slot, completedAt: Date.now(), sentences, count: 1 };
     readOnly.current = false;
     setReadCounts((current) => ({ ...current, [slot]: (current[slot] ?? 0) + 1 }));
+    setReadPractices((current) => [...current, practice]);
   }, []);
 
   /**
@@ -365,6 +375,7 @@ export default function ExamResult({
   const rewrittenCount = Object.keys(rewrites.browser).length;
   const waitingSlots = slotsAwaitingFeedback(answeredSlots, feedbackBySlot, pendingSlots);
   const feedbackCount = answeredSlots.filter((slot) => feedbackBySlot[slot]).length;
+  const feedbackCounts = summarizeFeedback(answeredSlots, feedbackBySlot);
   const exit = examExitLink(exam.mode);
   const next = nextPracticeLink(exam.mode);
   // 연습을 마친 뒤 답변이나 피드백을 덧붙였다면 언제 저장한 회차인지 함께 적는다.
@@ -382,12 +393,15 @@ export default function ExamResult({
         <h1 className="mt-3 text-2xl font-semibold tracking-tight">{historyEntry ? "지난 연습 결과" : "연습 결과"}</h1>
         <p className="mt-2 text-xs text-fg-subtle">{savedStamp}{savedStamp === finishedStamp ? "" : ` 저장 · 연습 ${finishedStamp}`}</p>
         <p className="mt-3 text-sm text-fg-muted">답변 {answeredCount}문항 · 말한 시간 {formatTime(totalTime)} · 녹음 {recordingCount}개</p>
-        {answeredCount > 0 && <AnswerTimeline exam={exam} answeredSlots={answeredSlots} times={times} />}
+        <div className="mt-5 border-t border-line pt-5">
+          <FeedbackProgress counts={feedbackCounts} total={answeredCount} />
+        </div>
         {saveError && <p role="alert" className="mt-3 text-xs text-warn-ink">{saveError}</p>}
 
         {/* 결과를 열면 문항 피드백부터 보이게 한다. 통계와 안내는 지우지 않고 접어 둔다. */}
         <details className="mt-5 border-t border-line pt-1">
           <summary className="cursor-pointer select-none py-3 text-sm font-semibold text-fg-muted">연습 통계</summary>
+          {answeredCount > 0 && <AnswerTimeline exam={exam} answeredSlots={answeredSlots} times={times} />}
           <dl className="mt-4 grid grid-cols-2 gap-3 text-center sm:grid-cols-3">
             <div><dt className="text-xs text-fg-muted">답변한 문항</dt><dd className="mt-1 text-lg font-medium tabular-nums">{answeredCount}/{exam.items.length}</dd></div>
             <div><dt className="text-xs text-fg-muted">전체 단어</dt><dd className="mt-1 text-lg font-medium tabular-nums">{totalWords}</dd></div>
@@ -409,7 +423,7 @@ export default function ExamResult({
           {persisted && <p className="mt-2 text-xs leading-relaxed text-fg-muted">질문·답변·AI 피드백은 이 브라우저에 최근 20회까지 저장됩니다. 주제별 연습·실전 모의고사 화면 아래의 연습 기록에서 다시 볼 수 있습니다. 녹음본은 현재 화면에서만 재생되므로 필요하면 다운로드해 주세요.</p>}
           {rewrittenCount > 0 && <p className="mt-2 text-xs leading-relaxed text-fg-muted">AI 분석에 녹음본을 보낸 {rewrittenCount}문항은 OpenAI 가 다시 받아쓴 텍스트를 답변으로 씁니다. 위 통계도 그 텍스트 기준이며, 문항을 펼치면 원래 브라우저 받아쓰기를 보거나 되돌릴 수 있습니다.</p>}
           <p className="mt-2 text-xs leading-relaxed text-fg-muted">
-            AI 코칭은 문법 채점보다 <strong className="font-semibold text-fg">핵심 주제 → 활동·예시·디테일 → 감정·의미</strong> 흐름과 전달력을 우선합니다. 답변 첫 몇 문장 안에 질문에 대한 답이 나오는 <strong className="font-semibold text-fg">두괄식</strong>인지도 함께 봅니다. 꼭 첫 문장일 필요는 없습니다. 롤플레이 11~13번은 전화 대화에 가까워 두괄식을 요구하지 않고, 요청·문제가 일찍 드러나는지만 봅니다. 생각과 생각을 자연스럽게 잇는 <strong className="font-semibold text-fg">연결 표현</strong>도 짚어 줍니다. 문법은 의미 전달을 크게 방해하는 경우만 지적하도록 설정했습니다.
+            AI 코칭은 문법 채점보다 <strong className="font-semibold text-fg">{FEEDBACK_CRITERIA.map(({ label }) => label).join(" → ")}</strong> 흐름과 전달력을 우선합니다. 답변 첫 몇 문장 안에 질문에 대한 답이 나오는 <strong className="font-semibold text-fg">두괄식</strong>인지도 함께 봅니다. 꼭 첫 문장일 필요는 없습니다. 롤플레이 11~13번은 전화 대화에 가까워 두괄식을 요구하지 않고, 요청·문제가 일찍 드러나는지만 봅니다. 생각과 생각을 자연스럽게 잇는 <strong className="font-semibold text-fg">연결 표현</strong>도 짚어 줍니다. 문법은 의미 전달을 크게 방해하는 경우만 지적하도록 설정했습니다.
           </p>
         </details>
       </Card>
@@ -673,14 +687,26 @@ function ItemResult({
 
   return (
     <Card className="overflow-hidden">
-      <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-surface-2">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-surface-3 text-sm font-semibold text-fg-muted">{number}</span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm text-fg">{item.typeLabel}</span>
-          <span className="block truncate text-xs text-fg-subtle">{item.emoji} {item.topicKo}</span>
+      <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="grid w-full grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 px-4 py-4 text-left transition hover:bg-surface-2 sm:px-5">
+        <span className="col-start-1 row-start-1 grid h-8 w-8 place-items-center rounded-lg bg-surface-3 text-sm font-semibold text-fg-muted">{number}</span>
+        <span className="col-start-2 row-start-1 flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <span className="min-w-0">
+            <span className="block truncate text-sm text-fg">{item.typeLabel}</span>
+            <span className="block truncate text-xs text-fg-subtle">{item.emoji} {item.topicKo}</span>
+          </span>
+          <ItemStatus loading={feedbackLoading} failed={!!feedbackError} feedback={!!feedback} answered={hasAnswer} />
         </span>
-        <ItemStatus loading={feedbackLoading} failed={!!feedbackError} feedback={!!feedback} answered={hasAnswer} />
-        <span className="shrink-0 text-fg-subtle">{open ? "▲" : "▼"}</span>
+        <span className="col-span-3 row-start-2 flex flex-wrap gap-1.5 sm:col-span-2 sm:col-start-2">
+          {FEEDBACK_CRITERIA.map(({ key, label }) => {
+            const status = hasAnswer ? feedback?.structure[key] : undefined;
+            const good = status === "good";
+            return <span key={key} aria-label={`${label}: ${status ? good ? "좋음" : "보강" : "미평가"}`}
+              className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-medium ring-1 ring-inset sm:text-xs ${status ? good ? "bg-success-tint text-success-ink ring-success-ink/30" : "bg-warn-tint text-warn-ink ring-warn-ink/30" : "bg-surface-2 text-fg-subtle ring-line"}`}>
+              <span aria-hidden="true">{status ? good ? "✓" : "△" : "—"}</span>{label}
+            </span>;
+          })}
+        </span>
+        <span aria-hidden="true" className="col-start-3 row-start-1 text-fg-subtle">{open ? "▲" : "▼"}</span>
       </button>
 
       {open && (
@@ -818,7 +844,7 @@ function ItemStatus({ loading, failed, feedback, answered }: {
 }) {
   const pill = "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset";
   if (loading) return <span className={`${pill} bg-primary-tint text-primary-ink ring-primary/25 motion-safe:animate-pulse`}>분석 중…</span>;
-  if (feedback) return <span className={`${pill} bg-success-tint text-success-ink ring-success-ink/30`}>✓ 피드백</span>;
+  if (feedback) return null;
   if (failed) return <span className={`${pill} bg-warn-tint text-warn-ink ring-warn-ink/30`}>분석 실패</span>;
   return <span className="shrink-0 text-xs text-fg-muted">{answered ? "답변함" : "답변 없음"}</span>;
 }

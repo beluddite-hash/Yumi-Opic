@@ -8,9 +8,12 @@ import {
   topicIdsForChoices,
 } from "../data";
 import type { Exam, ExamItem } from "./types";
-import { isOpicFeedback, type OpicFeedback } from "./feedback";
+import { emptyFeedbackCounts, FEEDBACK_CRITERIA, isOpicFeedback, type FeedbackCounts, type OpicFeedback } from "./feedback";
+import { mergeDailySpeaking, totalDailySpeaking, type DailySpeaking, type ReadPractice, type SpeakingTotals } from "./speakingActivity";
 const SETTINGS_KEY = "yumi-opic:settings";
 const HISTORY_KEY = "yumi-opic:history";
+const DAILY_SPEAKING_KEY = "yumi-opic:daily-speaking";
+export const HISTORY_CHANGED_EVENT = "yumi-opic:history-changed";
 /**
  * surveyChoiceIds 는 배경 설문 화면에서 고른 항목 전부다. 문제은행이 없는 항목도 그대로 남긴다.
  * enabledSurveyIds 는 그 가운데 문제은행이 있는 주제만 추린 값이라 늘 함께 움직인다.
@@ -109,6 +112,8 @@ export interface SavedResult {
   feedback: Record<number, OpicFeedback>;
   /** 문항별로 고친 답변을 따라 읽은 횟수. 한 번도 읽지 않은 기록에는 없다. */
   readCounts?: Record<number, number>;
+  /** 날짜와 당시 문장 수를 가진 따라 읽기 기록. 빈 배열도 날짜 집계를 시작했다는 뜻이다. */
+  readPractices?: ReadPractice[];
 }
 
 /** 저장된 기록에서 받아들이는 연습 방식. 모르는 값이 적힌 기록은 버린다. */
@@ -148,11 +153,18 @@ function readResult(value: unknown): SavedResult | undefined {
   const browserAnswers = texts(value.browserAnswers);
   // 읽은 횟수도 없는 기록에 빈 값을 만들지 않는다. 이 기능 전에 쌓인 기록이 그렇다.
   const readCounts = numbers(value.readCounts);
+  const slots = new Set(exam.items.map((item) => item.slot));
+  const readPractices = Array.isArray(value.readPractices) ? value.readPractices.filter((practice): practice is ReadPractice =>
+    isRecord(practice) && slots.has(Number(practice.slot)) && typeof practice.slot === "number"
+    && isCount(practice.completedAt) && Number.isFinite(new Date(practice.completedAt).getTime())
+    && Number.isSafeInteger(practice.sentences) && Number(practice.sentences) > 0
+    && Number.isSafeInteger(practice.count) && Number(practice.count) > 0) : undefined;
   return {
     exam: exam as unknown as Exam,
     answers: texts(value.answers),
     ...(Object.keys(browserAnswers).length ? { browserAnswers } : {}),
     ...(Object.keys(readCounts).length ? { readCounts } : {}),
+    ...(readPractices ? { readPractices } : {}),
     times: numbers(value.times), hintUse: numbers(value.hintUse), replays: numbers(value.replays),
     feedback: Object.fromEntries(Object.entries(isRecord(value.feedback) ? value.feedback : {})
       .filter(([, feedback]) => isOpicFeedback(feedback))) as Record<number, OpicFeedback>,
@@ -186,13 +198,46 @@ export function loadHistory(): HistoryEntry[] {
   } catch { return []; }
 }
 
-function saveHistory(history: HistoryEntry[]): void {
+function readDailySpeaking(): DailySpeaking | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw: unknown = JSON.parse(window.localStorage.getItem(DAILY_SPEAKING_KEY) ?? "null");
+    if (!isRecord(raw) || typeof raw.day !== "string" || !isRecord(raw.entries)) return null;
+    const fields = ["questions", "answerSentences", "readCount", "readSentences"] as const;
+    const entries = Object.fromEntries(Object.entries(raw.entries).flatMap(([id, entry]) => {
+      if (!isRecord(entry) || !fields.every((field) => Number.isSafeInteger(entry[field]) && Number(entry[field]) >= 0)) return [];
+      const saved = entry.feedback;
+      // 이전 공부량 캐시는 살리고, 없는/손상된 평가는 미평가로 둔다.
+      const valid = isRecord(saved) && Number.isSafeInteger(saved.evaluated)
+        && Number(saved.evaluated) >= 0 && Number(saved.evaluated) <= Number(entry.questions)
+        && FEEDBACK_CRITERIA.every(({ key }) => Number.isSafeInteger(saved[key])
+          && Number(saved[key]) >= 0 && Number(saved[key]) <= Number(saved.evaluated));
+      return [[id, {
+        questions: Number(entry.questions), answerSentences: Number(entry.answerSentences),
+        readCount: Number(entry.readCount), readSentences: Number(entry.readSentences),
+        feedback: valid ? saved as unknown as FeedbackCounts : emptyFeedbackCounts(),
+      }]];
+    }));
+    return { day: raw.day, entries };
+  } catch { return null; }
+}
+
+export function loadTodaySpeaking(history = loadHistory(), now = Date.now()): SpeakingTotals {
+  return totalDailySpeaking(mergeDailySpeaking(readDailySpeaking(), history, now));
+}
+
+function saveHistory(history: HistoryEntry[], removedIds: readonly string[] = []): void {
   if (typeof window === "undefined") throw new Error("이 브라우저에서 기록을 저장할 수 없습니다.");
   try {
+    // 20회 밖으로 밀려나는 기록도 오늘 합계에는 먼저 남긴다.
+    const daily = mergeDailySpeaking(readDailySpeaking(), [...loadHistory(), ...history], Date.now());
+    for (const id of removedIds) delete daily.entries[id];
     window.localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    window.localStorage.setItem(DAILY_SPEAKING_KEY, JSON.stringify(daily));
   } catch {
     throw new Error("기록을 저장하지 못했습니다. 브라우저 저장 공간이나 저장 권한을 확인해 주세요.");
   }
+  window.dispatchEvent?.(new Event(HISTORY_CHANGED_EVENT));
 }
 
 export function pushHistory(entry: HistoryEntry): HistoryEntry[] {
@@ -218,16 +263,20 @@ export function deleteHistory(id: string): HistoryEntry[] {
   return deleteHistoryEntries([id]);
 }
 
-/** 고른 기록을 한 번에 지운다. 저장은 한 번만 해서 중간에 실패한 상태를 남기지 않는다. */
+/** 고른 기록을 함께 지우고 오늘의 말하기 합계에서도 뺀다. */
 export function deleteHistoryEntries(ids: readonly string[]): HistoryEntry[] {
   const removed = new Set(ids);
   const next = loadHistory().filter((entry) => !removed.has(entry.id));
-  saveHistory(next);
+  saveHistory(next, ids);
   return next;
 }
 
 export function clearHistory(): void {
   if (typeof window === "undefined") return;
-  try { window.localStorage.removeItem(HISTORY_KEY); }
+  try {
+    window.localStorage.removeItem(HISTORY_KEY);
+    window.localStorage.removeItem(DAILY_SPEAKING_KEY);
+  }
   catch { throw new Error("기록을 삭제하지 못했습니다. 브라우저 저장 권한을 확인해 주세요."); }
+  window.dispatchEvent?.(new Event(HISTORY_CHANGED_EVENT));
 }

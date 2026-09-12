@@ -102,8 +102,8 @@ function NewExamPageClient() {
       {error && <p role="alert" className="mt-4 text-sm text-warn-ink">{error}</p>}
       {exam && <>
         <h1 className="mt-4 text-2xl font-semibold">{exam.items.length}문항이 준비됐습니다</h1>
-        <p className="mt-3 text-sm leading-relaxed text-fg-muted">선택한 주제 중 2개로 2~7번 세트를, 돌발 주제 1개로 8~10번 세트를 만들고, 11~13번 롤플레이 세트와 14~15번 비교·이슈 문항을 더했습니다.</p>
-        <p className="mt-3 text-xs leading-relaxed text-fg-muted">돌발 세트는 돌발 {surpriseTopics.length}개 주제 가운데 하나에서 무작위로 나옵니다. 번호와 유형은 실제 시험에서 늘 똑같이 맞아떨어지지는 않습니다.</p>
+        <p className="mt-3 text-sm leading-relaxed text-fg-muted">2~4·5~7·8~10번 세트와 11~13번 롤플레이 세트, 14~15번 비교·이슈까지 다섯 구간을 만듭니다. 실제 시험처럼 세 구간은 선택한 배경 설문 주제에서, 두 구간은 돌발 주제에서 나오며 같은 주제는 한 번만 나옵니다.</p>
+        <p className="mt-3 text-xs leading-relaxed text-fg-muted">돌발 {surpriseTopics.length}개 주제 가운데 둘을 뽑아 어느 구간에 넣을지는 회차마다 달라집니다. 롤플레이는 늘 배경 설문 주제에서 나옵니다. 번호와 유형은 실제 시험에서 늘 똑같이 맞아떨어지지는 않습니다.</p>
         <ul className="mt-5 space-y-1.5 border-t border-line pt-4 text-xs leading-relaxed text-fg-muted">
           <li>· 실제 응시 화면과 같습니다. 문항마다 <strong className="text-fg">▶ 를 눌러야</strong> 질문이 나옵니다.</li>
           <li>· 질문이 끝난 뒤 <strong className="text-fg">5초 안에</strong> 같은 버튼을 누르면 한 번 더 들을 수 있고, 재청취는 문항당 한 번뿐입니다.</li>

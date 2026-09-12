@@ -5,9 +5,10 @@ import { hasAnswerText, sameSpokenText } from "@/lib/answers";
 import { diffAnswers, type DiffPiece } from "@/lib/answerDiff";
 import {
   feedbackCategoryLabel,
+  feedbackDisplayText,
   feedbackItemQuotes,
   feedbackRewrite,
-  requiresFrontLoadedOpening,
+  FEEDBACK_CRITERIA,
   type FeedbackCategory,
   type OpicFeedback,
   type OpicFeedbackItem,
@@ -79,9 +80,9 @@ const SOFT_HIDDEN = "no-underline";
  * 총평과 흐름 점검 → 고칠 점 → Before / After 순서다. 무엇이 문제인지 먼저 읽고,
  * 그것을 내 답변에 반영하면 어디가 달라지는지 바로 아래에서 확인하게 한다.
  */
-export default function FeedbackDetails({ feedback, questionType, answer, expressions, reading, variant = "screen" }: {
+export default function FeedbackDetails({ feedback, answer, expressions, reading, variant = "screen" }: {
   feedback: OpicFeedback;
-  /** 롤플레이는 두괄식을 요구하지 않아 첫 흐름 단계의 이름이 바뀐다. */
+  /** 평가 기준은 유형별로 다르지만, 화면의 세 항목 명칭은 공통이다. */
   questionType: string;
   /** 지금 화면에 보이는 답변. Before 가 이와 다르면(브라우저 받아쓰기로 되돌린 경우 등) 한 줄로 알린다. */
   answer?: string;
@@ -89,7 +90,6 @@ export default function FeedbackDetails({ feedback, questionType, answer, expres
   reading?: ReadingControls;
   variant?: Variant;
 }) {
-  const frontLoaded = requiresFrontLoadedOpening(questionType);
   const overallDraft = expressions && expressionFromOverall(feedback, expressions.context);
   const rewrite = feedbackRewrite(feedback);
   const items = feedback.items.slice(0, 5);
@@ -105,13 +105,12 @@ export default function FeedbackDetails({ feedback, questionType, answer, expres
             <SaveExpressionButton draft={overallDraft} saved={expressions.savedIds.has(draftId(overallDraft))} onToggle={expressions.onToggle} />
           )}
         </div>
-        <p className="mt-1.5 text-sm font-medium leading-relaxed text-fg">{feedback.overall}</p>
+        <p className="mt-1.5 text-sm font-medium leading-relaxed text-fg">{feedbackDisplayText(feedback.overall)}</p>
         <ol aria-label="답변 흐름 점검" className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-2">
-          <FlowStep label={frontLoaded ? "두괄식 도입" : "요청·문제 전달"} good={feedback.structure.topic === "good"} />
-          <FlowStep label="활동·디테일" good={feedback.structure.detail === "good"} arrow />
-          <FlowStep label="감정·의미" good={feedback.structure.feeling === "good"} arrow />
+          {FEEDBACK_CRITERIA.map(({ key, label }, index) =>
+            <FlowStep key={key} label={label} good={feedback.structure[key] === "good"} arrow={index > 0} />)}
         </ol>
-        {feedback.structure.note && <p className="mt-2.5 text-xs leading-relaxed text-fg-muted">{feedback.structure.note}</p>}
+        {feedback.structure.note && <p className="mt-2.5 text-xs leading-relaxed text-fg-muted">{feedbackDisplayText(feedback.structure.note)}</p>}
         {expressions?.error && <p role="alert" className="mt-2 text-xs text-warn-ink">{expressions.error}</p>}
       </section>
 
@@ -198,8 +197,8 @@ function FeedbackItem({ detail, index, expressions, active, onHover }: {
           <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${flow ? "bg-primary-tint text-primary-ink" : "bg-surface-3 text-fg-muted"}`}>
             {feedbackCategoryLabel[detail.category]}
           </span>
-          <p className="mt-1.5 text-sm font-semibold leading-snug text-fg">{detail.title}</p>
-          {detail.message && <p className="mt-1 text-xs leading-relaxed text-fg-muted">{detail.message}</p>}
+          <p className="mt-1.5 text-sm font-semibold leading-snug text-fg">{feedbackDisplayText(detail.title)}</p>
+          {detail.message && <p className="mt-1 text-xs leading-relaxed text-fg-muted">{feedbackDisplayText(detail.message)}</p>}
           {detail.example && (
             <div className="mt-2.5 rounded-lg border-l-2 border-primary bg-surface px-3 py-2">
               <p className="text-[10px] font-semibold tracking-wider text-primary-ink">이렇게 말해 보세요</p>

@@ -118,7 +118,29 @@ const GENERAL_TYPES: QuestionType[][] = [
   ["description", "experience", "memorable"],
 ];
 const ROLEPLAY_TYPES: QuestionType[] = ["roleplay_ask", "roleplay_problem", "roleplay_experience"];
-export const MIN_FULL_EXAM_SURVEY_TOPICS = 4;
+
+/**
+ * 실전 모의고사의 다섯 구간. 실제 시험처럼 세 구간은 배경 설문에서, 두 구간은 돌발에서 뽑고
+ * 어느 구간이 돌발이 될지는 회차마다 무작위로 정한다. 롤플레이는 돌발 뱅크에 문항이 없어
+ * 항상 배경 설문에서 나온다. types 는 배경 설문 구간의 번호별 유형이며, 돌발이 들어가는
+ * 일반 구간은 자료 순서를 따르므로 이 유형을 지키지 않는다.
+ */
+const FULL_EXAM_GROUPS = [
+  { slot: 2, label: "세트 1", types: GENERAL_TYPES[0], surveyOnly: false },
+  { slot: 5, label: "세트 2", types: GENERAL_TYPES[1], surveyOnly: false },
+  { slot: 8, label: "세트 3", types: GENERAL_TYPES[1], surveyOnly: false },
+  { slot: 11, label: "롤플레이 세트", types: ROLEPLAY_TYPES, surveyOnly: true },
+  { slot: 14, label: "어드밴스 세트", types: ADVANCED_TYPES, surveyOnly: false },
+] as const;
+
+/** 한 회차에 돌발에서 뽑는 구간 수. 나머지 구간은 모두 배경 설문에서 뽑는다. */
+export const FULL_EXAM_SURPRISE_GROUPS = 2;
+export const MIN_FULL_EXAM_SURVEY_TOPICS = FULL_EXAM_GROUPS.length - FULL_EXAM_SURPRISE_GROUPS;
+
+/** 돌발이 들어갈 수 있는 구간 조합. 롤플레이 구간은 후보에서 빠진다. */
+const SURPRISE_GROUP_CHOICES: number[][] = FULL_EXAM_GROUPS
+  .flatMap((group, index) => (group.surveyOnly ? [] : [index]))
+  .flatMap((first, i, eligible) => eligible.slice(i + 1).map((second) => [first, second]));
 
 function coherentSet(questions: readonly Question[]): boolean {
   return new Set(questions.map(q => q.id)).size === questions.length && questions.every((q, i) =>
@@ -128,16 +150,27 @@ function coherentSet(questions: readonly Question[]): boolean {
 /** Resolve declared sets intact. Legacy banks enumerate complete eligible bundles before any draw. */
 export function completeQuestionSets(topic: Topic, types?: readonly QuestionType[]): Question[][] {
   let sets: Question[][];
+  let enforced = types;
   if (topic.fixedPracticeSets) {
     sets = topic.fixedPracticeSets.map(group => group.items.map(({ questionId }) => {
       const question = topic.questions.find(q => q.id === questionId);
       if (!question) throw new Error(`${topic.id}: missing set question ${questionId}`);
       return question;
     }));
+  } else if (topic.category === "surprise" && types?.length && types.every(type => ADVANCED_TYPES.includes(type))) {
+    // 비교·이슈 구간만 유형 순서를 지킨다. 두 유형을 모두 가진 돌발 주제만 여기에 들어간다.
+    sets = types.reduce<Question[][]>((built, type) => built.flatMap(set =>
+      topic.questions.filter(q => q.type === type && !set.some(earlier => earlier.id === q.id)).map(q => [...set, q])), [[]]);
   } else if (topic.category === "surprise") {
-    // Start with the first source question; retain source order and exclude advanced types.
+    /*
+     * 돌발은 주제마다 가진 유형이 제각각이라 번호별 유형을 강요하지 않는다. 자료의 첫
+     * 문항으로 시작하고 나머지 둘은 자료 순서를 지켜 무작위로 고른다. 1·2·3 뿐 아니라
+     * 1·3·4, 1·3·5도 나온다. 비교·이슈는 어드밴스 구간 몫이라 여기서 뺀다.
+     */
     const [first, ...rest] = topic.questions.filter(q => !ADVANCED_TYPES.includes(q.type));
     sets = first ? rest.flatMap((second, i) => rest.slice(i + 1).map(third => [first, second, third])) : [];
+    // 자료 순서 세트는 번호별 유형과 무관하므로 요청 유형으로 거르지 않는다.
+    enforced = undefined;
   } else {
     sets = [[]];
     for (const type of types ?? []) {
@@ -146,32 +179,21 @@ export function completeQuestionSets(topic: Topic, types?: readonly QuestionType
       sets = sets.flatMap(set => (verified.length ? verified : typed).map(q => [...set, q]));
     }
   }
-  return sets.filter(set => set.length > 0 && coherentSet(set) && (!types ||
-    (set.length === types.length && set.every((q, i) => q.type === types[i]))));
+  return sets.filter(set => set.length > 0 && coherentSet(set) && (!enforced ||
+    (set.length === enforced.length && set.every((q, i) => q.type === enforced[i]))));
 }
 
-export function buildFullExam(options: BuildExamOptions = {}): Exam {
-  const { includeIntro = true, rng = Math.random } = options;
-  const requested = new Set(options.enabledSurveyIds ?? DEFAULT_SURVEY_IDS);
-  const enabled = drawableSurveyTopics.filter(topic => requested.has(topic.id));
-  if (enabled.length < MIN_FULL_EXAM_SURVEY_TOPICS) {
-    const excluded = surveyTopics.filter(topic => DRAW_EXCLUDED_TOPIC_IDS.includes(topic.id)).map(topic => topic.ko).join("·");
-    throw new Error(`실전 모의고사를 만들려면 서베이 주제를 ${MIN_FULL_EXAM_SURVEY_TOPICS}개 이상 선택해 주세요. ${excluded} 주제는 모의고사에 나오지 않아 개수에서 빠집니다.`);
-  }
-  const sections = [
-    { slot: 2, label: "세트 1", topics: enabled, types: GENERAL_TYPES[0] },
-    { slot: 5, label: "세트 2", topics: enabled, types: GENERAL_TYPES[1] },
-    { slot: 8, label: "돌발 세트", topics: surpriseTopics, types: undefined },
-    { slot: 11, label: "롤플레이 세트", topics: enabled, types: ROLEPLAY_TYPES },
-    { slot: 14, label: "어드밴스", topics: enabled, types: ADVANCED_TYPES },
-  ];
-  const pools = sections.map(section => shuffle(section.topics.map(topic => ({
-    topic, sets: completeQuestionSets(topic, section.types),
-  })).filter(candidate => candidate.sets.length > 0), rng));
-  type Candidate = (typeof pools)[number][number];
+interface GroupCandidate { topic: Topic; sets: Question[][] }
+
+/** 구간마다 세트가 완성되는 주제를 하나씩 배정한다. 같은 주제는 한 회차에 한 번만 쓴다. */
+function assignGroupTopics(surpriseGroups: readonly number[], survey: readonly Topic[], rng: RandomSource): GroupCandidate[] | undefined {
+  const pools = FULL_EXAM_GROUPS.map((group, index) => shuffle(
+    (surpriseGroups.includes(index) ? surpriseTopics : survey)
+      .map(topic => ({ topic, sets: completeQuestionSets(topic, group.types) }))
+      .filter(candidate => candidate.sets.length > 0), rng));
   const usedTopicIds = new Set<string>();
-  // Backtrack when a later section needs a topic selected for an earlier section.
-  function assign(index: number): Candidate[] | undefined {
+  // Backtrack when a later group needs a topic already taken by an earlier one.
+  function assign(index: number): GroupCandidate[] | undefined {
     if (index === pools.length) return [];
     for (const candidate of pools[index]) {
       if (usedTopicIds.has(candidate.topic.id)) continue;
@@ -182,17 +204,38 @@ export function buildFullExam(options: BuildExamOptions = {}): Exam {
     }
     return undefined;
   }
-  const selected = assign(0);
-  if (!selected) throw new Error("선택한 주제의 완성된 세트로 주제 중복 없는 모의고사를 구성할 수 없습니다. 다른 서베이 주제를 추가해 주세요.");
-  const items = selected.flatMap(({ topic, sets }, index) => {
-    const section = sections[index];
-    return pickRandom(sets, rng).map((question, i) => item(section.slot + i, topic, question, section.label));
-  });
-  if (includeIntro) items.unshift(introItem());
-  return {
-    ...base("full"), items,
-    notices: ["각 구간은 한 주제의 완성된 세트로 출제하며, 같은 주제는 한 회차에 한 번만 나옵니다.", "8~10번은 돌발 주제 한 개에서 제공 자료 순서대로 세 문항을 내는 돌발 세트입니다.", "11~13번은 실제 시험처럼 한 주제에서 질문하기 → 문제 해결 → 관련 경험으로 이어지는 롤플레이 세트입니다."],
-  };
+  return assign(0);
+}
+
+export function buildFullExam(options: BuildExamOptions = {}): Exam {
+  const { includeIntro = true, rng = Math.random } = options;
+  const requested = new Set(options.enabledSurveyIds ?? DEFAULT_SURVEY_IDS);
+  const enabled = drawableSurveyTopics.filter(topic => requested.has(topic.id));
+  if (enabled.length < MIN_FULL_EXAM_SURVEY_TOPICS) {
+    const excluded = surveyTopics.filter(topic => DRAW_EXCLUDED_TOPIC_IDS.includes(topic.id)).map(topic => topic.ko).join("·");
+    throw new Error(`실전 모의고사를 만들려면 서베이 주제를 ${MIN_FULL_EXAM_SURVEY_TOPICS}개 이상 선택해 주세요. ${excluded} 주제는 모의고사에 나오지 않아 개수에서 빠집니다.`);
+  }
+  // 돌발 구간 조합을 무작위 순서로 훑어 세트가 완성되는 첫 배정을 쓴다.
+  for (const surpriseGroups of shuffle(SURPRISE_GROUP_CHOICES, rng)) {
+    const selected = assignGroupTopics(surpriseGroups, enabled, rng);
+    if (!selected) continue;
+    const items = selected.flatMap(({ topic, sets }, index) => {
+      const group = FULL_EXAM_GROUPS[index];
+      const label = topic.category === "surprise" ? `${group.label} · 돌발` : group.label;
+      return pickRandom(sets, rng).map((question, i) => item(group.slot + i, topic, question, label));
+    });
+    if (includeIntro) items.unshift(introItem());
+    return {
+      ...base("full"), items,
+      // 어느 구간이 돌발인지는 미리 알려 주지 않는다. 실제 시험처럼 문항을 열어야 알 수 있다.
+      notices: [
+        "각 구간은 한 주제의 완성된 세트로 출제하며, 같은 주제는 한 회차에 한 번만 나옵니다.",
+        `다섯 구간 가운데 ${FULL_EXAM_SURPRISE_GROUPS}개가 돌발 세트입니다. 어느 구간에 들어갈지는 회차마다 달라집니다.`,
+        "11~13번은 실제 시험처럼 한 주제에서 질문하기 → 문제 해결 → 관련 경험으로 이어지는 롤플레이 세트입니다.",
+      ],
+    };
+  }
+  throw new Error("선택한 주제의 완성된 세트로 주제 중복 없는 모의고사를 구성할 수 없습니다. 다른 서베이 주제를 추가해 주세요.");
 }
 
 const PRACTICE_TYPES: QuestionType[] = [
@@ -276,7 +319,8 @@ export function buildTopicSet(topics: readonly Topic[] = allTopics, rng: RandomS
   const patterns = RANDOM_SET_PATTERNS.map((pattern) => ({
     ...pattern, sets: questionSetsOfTypes(topic, pattern.types),
   })).filter((pattern) => pattern.sets.length > 0);
-  if (topic.category === "surprise" && !patterns.some((pattern) => pattern.types[0] === "description")) {
+  if (topic.category === "surprise") {
+    // 제공 자료의 연결 흐름도 늘 후보로 둔다. 유형별 세트만 두면 자료의 이어지는 질문이 묻힌다.
     const sets = completeQuestionSets(topic);
     if (sets.length) patterns.unshift({ label: "돌발 연결 세트 · 제공 자료의 흐름에 따른 3문항", types: [], sets });
   }

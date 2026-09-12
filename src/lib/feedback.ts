@@ -32,18 +32,59 @@ export const FEEDBACK_CATEGORIES = [
 
 export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number];
 
+/** 문항 칩, 상세 피드백, 결과·오늘 집계의 공통 명칭. 저장 키는 유지한다. */
+export const FEEDBACK_CRITERIA = [
+  { key: "topic", label: "핵심 제시" },
+  { key: "detail", label: "전개·디테일" },
+  { key: "feeling", label: "감정·의미" },
+] as const;
+
+/** 예전 AI 문구도 새 명칭으로 표시한다. 저장 내용과 표현의 고정 ID는 건드리지 않는다. */
+export function feedbackDisplayText(text: string): string {
+  return text.replace(/두괄식 도입/g, FEEDBACK_CRITERIA[0].label)
+    .replace(/활동·디테일/g, FEEDBACK_CRITERIA[1].label);
+}
+
 /** 화면과 PDF 모아보기에서 함께 쓰는 유형 이름. */
 export const feedbackCategoryLabel: Record<FeedbackCategory, string> = {
   storytelling: "스토리텔링",
   transition: "연결 표현",
-  detail: "활동·디테일",
-  emotion: "감정·의미",
+  detail: FEEDBACK_CRITERIA[1].label,
+  emotion: FEEDBACK_CRITERIA[2].label,
   delivery: "전달력",
   pronunciation: "발음 체크",
   grammar: "문법",
 };
 
 export type FlowStatus = "good" | "needs_work";
+
+export interface FeedbackCounts {
+  evaluated: number;
+  topic: number;
+  detail: number;
+  feeling: number;
+}
+
+export function emptyFeedbackCounts(): FeedbackCounts {
+  return { evaluated: 0, topic: 0, detail: 0, feeling: 0 };
+}
+
+/** 실제 답변한 문항의 good만 센다. 미평가는 보강 판정으로 바꾸지 않는다. */
+export function summarizeFeedback(
+  answeredSlots: readonly number[],
+  feedbackBySlot: Readonly<Record<number, OpicFeedback | undefined>>,
+): FeedbackCounts {
+  const counts = emptyFeedbackCounts();
+  for (const slot of new Set(answeredSlots)) {
+    const structure = feedbackBySlot[slot]?.structure;
+    if (!structure) continue;
+    counts.evaluated += 1;
+    for (const { key } of FEEDBACK_CRITERIA) {
+      if (structure[key] === "good") counts[key] += 1;
+    }
+  }
+  return counts;
+}
 
 export interface OpicFeedbackItem {
   category: FeedbackCategory;

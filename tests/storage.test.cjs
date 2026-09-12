@@ -258,3 +258,65 @@ test('이미 고른 설문이 있으면 방문 표시가 그 선택을 덮지 �
   storage.markSurveySeen();
   assert.deepEqual(storage.loadSettings().surveyChoiceIds, ['job-none', 'hobby-music', 'sport-gym', 'vacation-home']);
 }));
+
+test('따라 읽은 날짜와 당시 문장 수를 저장하고 손상된 항목만 제외한다', () => withStorage((data) => {
+  const original = entry();
+  const slot = original.result.exam.items[0].slot;
+  const practice = { slot, completedAt: Date.now(), sentences: 6, count: 1 };
+  original.result.readCounts = { [slot]: 1 };
+  original.result.readPractices = [practice];
+  storage.pushHistory(original);
+  assert.deepEqual(storage.loadHistory()[0].result.readPractices, [practice]);
+  assert.equal(storage.loadTodaySpeaking().readSentences, 6);
+
+  original.result.readPractices.push(null, { ...practice, slot: 99 }, { ...practice, completedAt: 'today' },
+    { ...practice, sentences: -1 }, { ...practice, count: 0.5 });
+  data.set(KEY, JSON.stringify([original]));
+  assert.deepEqual(storage.loadHistory()[0].result.readPractices, [practice]);
+}));
+
+test('오늘 합계는 최근 20회보다 많이 보관하고 중복 저장으로 늘지 않는다', () => withStorage(() => {
+  for (let i = 0; i < 25; i++) storage.pushHistory(entry(`attempt-${i}`));
+  assert.equal(storage.loadHistory().length, 20);
+  assert.deepEqual(storage.loadTodaySpeaking(), { questions: 25, answerSentences: 25, readCount: 0, readSentences: 0, feedback: { evaluated: 25, topic: 25, detail: 25, feeling: 0 } });
+  storage.pushHistory(entry('attempt-24'));
+  assert.equal(storage.loadTodaySpeaking().questions, 25);
+  storage.deleteHistoryEntries(['attempt-24', 'attempt-23']);
+  assert.equal(storage.loadTodaySpeaking().questions, 23);
+  assert.deepEqual(storage.loadTodaySpeaking().feedback, { evaluated: 23, topic: 23, detail: 23, feeling: 0 });
+  storage.clearHistory();
+  assert.deepEqual(storage.loadTodaySpeaking(), { questions: 0, answerSentences: 0, readCount: 0, readSentences: 0, feedback: { evaluated: 0, topic: 0, detail: 0, feeling: 0 } });
+}));
+
+test('오늘 통계가 없거나 손상돼도 저장된 상세 기록에서 복원한다', () => withStorage((data) => {
+  data.set(KEY, JSON.stringify([entry()]));
+  data.set('yumi-opic:daily-speaking', '{broken');
+  assert.equal(storage.loadTodaySpeaking().questions, 1);
+  data.set('yumi-opic:daily-speaking', JSON.stringify({ day: '2026-09-12', entries: { bad: { questions: -100 } } }));
+  assert.equal(storage.loadTodaySpeaking().questions, 1);
+}));
+
+test('이전 공부량 캐시의 숫자를 살리고 남아 있는 상세 기록의 평가를 복원한다', () => withStorage((data) => {
+  const { localDay } = require('../.test-build/lib/speakingActivity');
+  const original = entry();
+  data.set(KEY, JSON.stringify([original]));
+  data.set('yumi-opic:daily-speaking', JSON.stringify({ day: localDay(Date.now()), entries: {
+    archived: { questions: 4, answerSentences: 12, readCount: 3, readSentences: 6 },
+    [original.id]: { questions: 1, answerSentences: 1, readCount: 0, readSentences: 0 },
+    corrupt: { questions: 2, answerSentences: 2, readCount: 0, readSentences: 0,
+      feedback: { evaluated: 2, topic: 3, detail: 1, feeling: 1 } },
+  } }));
+  assert.deepEqual(storage.loadTodaySpeaking(), { questions: 7, answerSentences: 15, readCount: 3, readSentences: 6,
+    feedback: { evaluated: 1, topic: 1, detail: 1, feeling: 0 } });
+}));
+
+test('저장된 문항을 재분석해도 평가 개수는 늘지 않고 최신 판정으로 바뀐다', () => withStorage(() => {
+  const original = entry();
+  storage.pushHistory(original);
+  const slot = original.result.exam.items[0].slot;
+  const revised = jsonSnapshot(original.result);
+  revised.feedback[slot].structure = { topic: 'needs_work', detail: 'good', feeling: 'good', note: '' };
+  storage.updateHistoryResult(original.id, revised);
+  assert.deepEqual(storage.loadTodaySpeaking().feedback, { evaluated: 1, topic: 0, detail: 1, feeling: 1 });
+  assert.equal(storage.loadTodaySpeaking().questions, 1);
+}));
