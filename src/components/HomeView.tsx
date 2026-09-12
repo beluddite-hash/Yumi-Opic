@@ -85,7 +85,9 @@ export default function HomeView() {
 
     <section className="mt-4 rounded-xl border border-line px-5 py-4">
       <h2 className="text-sm font-medium">랜덤 연습</h2>
-      <p className="mt-1 text-xs leading-relaxed text-fg-muted">1문제는 한 문항, 1토픽은 한 주제에서 3문항을 고른 범위에서 무작위로 냅니다. 걷기·콘서트·조깅은 모의고사처럼 빠지고 주제별 연습에서 풀 수 있습니다.</p>
+      <p className="mt-1 text-xs leading-relaxed text-fg-muted">1문제는 한 문항, 1토픽은 한 주제와 세트 유형을 무작위로 골라 2~3문항을 냅니다.</p>
+      <p className="mt-1 text-xs leading-relaxed text-fg-muted">2~4번형(묘사·루틴·경험), 5~7·8~10번형(묘사·과거/최초·기억에 남는 경험), 11~13번형(롤플레이·관련 경험), 14~15번형(변화·이슈) 중 해당 주제에서 가능한 구성이 나옵니다. 변화·이슈는 2문항이며, 돌발은 제공 문항으로 구성합니다.</p>
+      <p className="mt-1 text-xs leading-relaxed text-fg-muted">걷기·콘서트·조깅은 모의고사처럼 빠지고 주제별 연습에서 풀 수 있습니다.</p>
       <div className="mt-2 divide-y divide-line">{RANDOM_SCOPES.map((scope) => (
         <div key={scope} className="flex flex-wrap items-center justify-between gap-2 py-2">
           <span className="text-sm text-fg-muted">{RANDOM_SCOPE_LABELS[scope]}</span>

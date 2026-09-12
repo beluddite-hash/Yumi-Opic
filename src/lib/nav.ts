@@ -8,7 +8,7 @@ export const RANDOM_SCOPES: readonly RandomScope[] = ["all", "survey", "surprise
 export const RANDOM_SCOPE_LABELS: Record<RandomScope, string> = { all: "서베이+돌발", survey: "서베이", surprise: "돌발" };
 
 /**
- * 랜덤 연습 링크. single 은 한 문항, set 은 한 주제에서 세 문항을 고른 범위에서 뽑는다.
+ * 랜덤 연습 링크. single 은 한 문항, set 은 한 주제의 2~3문항 세트를 고른 범위에서 뽑는다.
  * 전체 범위는 scope 를 붙이지 않아 예전 주소(`/exam?mode=single`)가 그대로 통한다.
  */
 export function randomPracticeLink(mode: "single" | "set", scope: RandomScope = "all"): NavLink {

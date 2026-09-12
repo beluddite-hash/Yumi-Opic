@@ -61,7 +61,7 @@ export type RandomScope = "all" | "survey" | "surprise";
 export interface Exam {
   id: string;
   createdAt: number;
-  /** single 은 1문제 랜덤 연습, set 은 한 주제에서 세 문항을 푸는 1토픽 랜덤 연습이다. */
+  /** single 은 1문제 랜덤 연습, set 은 한 주제에서 유형에 따라 2~3문항을 푸는 1토픽 랜덤 연습이다. */
   mode: "full" | "practice" | "single" | "set";
   items: ExamItem[];
   focusTopicId?: string;

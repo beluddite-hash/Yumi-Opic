@@ -155,39 +155,86 @@ test('every surprise topic can fill the 8-10 set and slot numbers, not source nu
   assert.deepEqual(practice.items.map((i) => engine.itemNumber(practice.mode, i)), ['1', '2', '3', '4', '5-A', '5-B', '6']);
 });
 
-test('1-topic random practice gives a three-question set from one survey or surprise topic', () => {
-  const surveySets = [['description','routine','experience'], ['description','experience','memorable']];
+const randomSetTypes = [
+  ['description', 'routine', 'experience'],
+  ['description', 'experience', 'memorable'],
+  ['roleplay_ask', 'roleplay_problem', 'roleplay_experience'],
+  ['comparison', 'issue'],
+];
+
+test('1-topic random practice reaches all four set types and keeps each set on one topic', () => {
   const drawable = data.allTopics.filter((t) => !EXCLUDED.includes(t.id));
-  const count = drawable.length;
-  const seen = new Set();
-  // 첫 추첨으로 주제를 하나씩 차례로 고르고, 세트 안의 추첨은 시드마다 달리한다.
-  for (let index = 0; index < count * 50; index++) {
-    const rest = seeded(index);
-    let first = true;
-    const rng = () => first ? (first = false, ((index % count) + 0.5) / count) : rest();
-    const exam = engine.buildRandomPractice('set', 'all', rng);
-    const topic = data.topicById.get(exam.focusTopicId);
-    assert.equal(topic.id, drawable[index % count].id);
-    seen.add(topic.id);
-    assert.equal(exam.mode, 'set');
-    assert.deepEqual(exam.items.map((i) => i.slot), [1, 2, 3]);
-    assert.deepEqual(exam.items.map((i) => engine.itemNumber(exam.mode, i)), ['1', '2', '3']);
-    assert.ok(exam.items.every((i) => i.topicId === topic.id));
-    assert.equal(new Set(ids(exam.items)).size, 3);
-    if (topic.category === 'survey') {
-      assert.ok(surveySets.some((types) => types.join() === exam.items.map((i) => i.question.type).join()));
-    } else {
-      assert.equal(exam.items[0].question.id, topic.questions[0].id);
-      const order = exam.items.map((i) => topic.questions.findIndex((q) => q.id === i.question.id));
-      assert.deepEqual(order, [...order].sort((a, b) => a - b));
-      exam.items.forEach((item, index) => {
-        assert.ok(!['comparison', 'issue'].includes(item.question.type));
-        for (const dependency of item.question.dependsOn ?? []) assert.ok(ids(exam.items.slice(0, index)).includes(dependency));
+  const seen = new Map(drawable.map((topic) => [topic.id, new Set()]));
+  for (let index = 0; index < drawable.length; index++) {
+    for (let variant = 0; variant < 12; variant++) {
+      const rest = seeded(index * 12 + variant);
+      const draws = [(index + 0.5) / drawable.length, ((variant % 4) + 0.5) / 4];
+      const exam = engine.buildRandomPractice('set', 'all', () => draws.length ? draws.shift() : rest());
+      const topic = drawable[index];
+      const types = exam.items.map((i) => i.question.type);
+      seen.get(topic.id).add(types.join());
+      assert.equal(exam.focusTopicId, topic.id);
+      assert.equal(exam.mode, 'set');
+      const slots = types[0] === 'comparison' ? [1, 2] : [1, 2, 3];
+      assert.deepEqual(exam.items.map((i) => i.slot), slots);
+      assert.deepEqual(exam.items.map((i) => engine.itemNumber(exam.mode, i)), slots.map(String));
+      assert.ok(exam.items.every((i) => i.topicId === topic.id));
+      assert.equal(new Set(ids(exam.items)).size, slots.length);
+      assert.equal(new Set(exam.items.map((i) => i.comboLabel)).size, 1);
+      exam.items.forEach((item, position) => {
+        assert.ok(topic.questions.includes(item.question));
+        for (const dependency of item.question.dependsOn ?? []) {
+          assert.ok(ids(exam.items.slice(0, position)).includes(dependency), item.question.id);
+        }
+        if (topic.category === 'survey' && topic.questions.some((q) => q.type === item.question.type && q.source === 'verified')) {
+          assert.equal(item.question.source, 'verified');
+        }
       });
+      if (topic.category === 'survey') {
+        const patternIndex = randomSetTypes.findIndex((pattern) => pattern.join() === types.join());
+        assert.equal(patternIndex, variant % 4);
+        assert.match(exam.items[0].comboLabel, [/2~4번형/, /5~7·8~10번형/, /11~13번형/, /14~15번형/][patternIndex]);
+      } else if (!randomSetTypes.some((pattern) => pattern.join() === types.join())) {
+        assert.match(exam.items[0].comboLabel, /돌발 연결 세트/);
+        assert.equal(exam.items[0].question.id, topic.questions[0].id);
+        const order = exam.items.map((i) => topic.questions.indexOf(i.question));
+        assert.deepEqual(order, [...order].sort((a, b) => a - b));
+        assert.ok(types.every((type) => !['comparison', 'issue'].includes(type)));
+      }
     }
   }
-  // 걷기·콘서트·조깅을 뺀 서베이 8개와 돌발 7개가 모두 나온다.
-  assert.deepEqual([...seen].sort(), drawable.map((t) => t.id).sort());
+  for (const topic of engine.drawableSurveyTopics) {
+    assert.deepEqual([...seen.get(topic.id)].sort(), randomSetTypes.map((types) => types.join()).sort());
+  }
+  for (const topic of data.surpriseTopics) {
+    assert.ok(seen.get(topic.id).size > 0, topic.id);
+    const hasAdvanced = topic.questions.some((q) => q.type === 'comparison') && topic.questions.some((q) => q.type === 'issue');
+    assert.equal(seen.get(topic.id).has('comparison,issue'), hasAdvanced, topic.id);
+  }
+});
+
+test('random surprise experience sets put past experience before memorable experience', () => {
+  const topic = data.topicById.get('recycling');
+  const draws = [0, 0.5, 0];
+  const exam = engine.buildTopicSet([topic], () => draws.shift());
+  assert.deepEqual(exam.items.map((i) => i.question.type), randomSetTypes[1]);
+  assert.deepEqual(ids(exam.items), ['recycling-q1', 'recycling-q4', 'recycling-q3']);
+  // 연습용 추첨이 원본 문제은행의 자료 순서를 바꾸지 않는다.
+  assert.deepEqual(topic.questions.map((q) => q.number), ['1', '2', '3', '4', '5-A', '5-B', '6']);
+});
+
+test('random roleplay chooses a complete connected scenario even with multiple questions per type', () => {
+  const home = data.topicById.get('home');
+  const questions = home.questions.filter((q) => q.type.startsWith('roleplay_'));
+  const alternativeAsk = { ...questions[0], id: 'another-scenario', source: 'verified' };
+  const topic = { ...home, questions: [alternativeAsk, ...questions.map((q) => ({ ...q, source: 'adapted' }))] };
+  for (const value of [0, 0.5, 0.999]) {
+    const exam = engine.buildTopicSet([topic], () => value);
+    assert.deepEqual(ids(exam.items), questions.map((q) => q.id));
+  }
+  assert.throws(() => engine.buildTopicSet([{ ...topic, questions: [alternativeAsk, ...questions.slice(1)] }]), /문항이 부족/);
+  assert.throws(() => engine.buildTopicSet([{ ...home, questions: [] }]), /문항이 부족/);
+  assert.throws(() => engine.buildTopicSet([]));
 });
 
 test('random practice draws only from the chosen scope and records it on the exam', () => {

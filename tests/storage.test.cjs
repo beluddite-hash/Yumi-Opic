@@ -116,11 +116,15 @@ test('고른 기록을 한 번에 지우고 나머지는 그대로 둔다', () =
 }));
 
 test('1토픽 랜덤 연습 기록도 상세 결과와 함께 되살린다', () => withStorage(() => {
-  const exam = buildTopicSet(allTopics, () => 0);
-  storage.pushHistory({ ...entry('topic-set', exam), label: '1토픽 랜덤 연습', totalItems: exam.items.length });
-  const saved = storage.loadHistory()[0];
-  assert.equal(saved.mode, 'set');
-  assert.deepEqual(saved.result.exam.items.map(item => item.question.id), exam.items.map(item => item.question.id));
+  for (const [pattern, count] of [[0, 3], [0.3, 3], [0.6, 3], [0.9, 2]]) {
+    const draws = [0, pattern, 0];
+    const exam = buildTopicSet(allTopics, () => draws.shift());
+    storage.pushHistory({ ...entry(`topic-set-${pattern}`, exam), label: '1토픽 랜덤 연습', totalItems: exam.items.length });
+    const saved = storage.loadHistory()[0];
+    assert.equal(saved.mode, 'set');
+    assert.equal(saved.totalItems, count);
+    assert.deepEqual(saved.result.exam, jsonSnapshot(exam));
+  }
 }));
 
 test('최근 20회만 저장한다', () => withStorage(() => {

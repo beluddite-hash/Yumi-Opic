@@ -118,12 +118,16 @@ const ADVANCED_TYPES: QuestionType[] = ["comparison", "issue"];
  * 나머지에서 자료 순서대로 고른다. 앞 문항의 답을 전제로 하는 문항은 그 앞 문항이
  * 먼저 나온 조합에서만 낸다.
  */
-function surpriseSet(topic: Topic, rng: RandomSource): Question[] {
+function surpriseSets(topic: Topic): Question[][] {
   const [first, ...rest] = topic.questions.filter((q) => !ADVANCED_TYPES.includes(q.type));
+  if (!first) return [];
   const sets = rest.flatMap((second, i) => rest.slice(i + 1).map((third) => [first, second, third]));
-  const coherent = sets.filter((set) => set.every((q, i) =>
+  return sets.filter((set) => set.every((q, i) =>
     (q.dependsOn ?? []).every((id) => set.slice(0, i).some((earlier) => earlier.id === id))));
-  return pickRandom(coherent, rng);
+}
+
+function surpriseSet(topic: Topic, rng: RandomSource): Question[] {
+  return pickRandom(surpriseSets(topic), rng);
 }
 
 export function buildFullExam(options: BuildExamOptions = {}): Exam {
@@ -210,23 +214,43 @@ export function buildPracticeExam(topic: Topic, rng: RandomSource = Math.random)
     notices: ["선택한 주제의 문제를 실제 시험 번호인 2~15번에 배정합니다. 같은 유형은 중복 출제될 수 있으며 원하는 문항만 답변할 수 있습니다."] };
 }
 
-/** 서베이 주제로 내는 세 문항 묶음. 실제 시험의 2~4번, 5~7번 세트와 같다. */
-const SURVEY_SET_TYPES: QuestionType[][] = [
-  ["description", "routine", "experience"],
-  ["description", "experience", "memorable"],
+/** 5~7번과 8~10번은 같은 유형 구성이므로 하나의 추첨 후보로 둔다. */
+const RANDOM_SET_PATTERNS: { label: string; types: QuestionType[] }[] = [
+  { label: "2~4번형 · 묘사 → 루틴 → 경험", types: ["description", "routine", "experience"] },
+  { label: "5~7·8~10번형 · 묘사 → 과거·최초 경험 → 기억에 남는 경험", types: ["description", "experience", "memorable"] },
+  { label: "11~13번형 · 롤플레이 질문하기 → 문제 해결 → 관련 경험", types: ["roleplay_ask", "roleplay_problem", "roleplay_experience"] },
+  { label: "14~15번형 · 변화·비교 → 이슈", types: ["comparison", "issue"] },
 ];
 
+/** 유형 순서와 선행 질문을 모두 만족하는 세트만 만든다. */
+function questionSetsOfTypes(topic: Topic, types: readonly QuestionType[]): Question[][] {
+  return types.reduce<Question[][]>((sets, type) => sets.flatMap((set) =>
+    topic.questions.filter((q) => q.type === type && !set.some((earlier) => earlier.id === q.id)
+      && (q.dependsOn ?? []).every((id) => set.some((earlier) => earlier.id === id)))
+      .map((q) => [...set, q])), [[]]);
+}
+
 /**
- * 1토픽 랜덤 연습. 서베이·돌발 주제 하나를 무작위로 골라 실제 시험처럼 세 문항 세트를 낸다.
- * 돌발 주제는 모의고사 8~10번 돌발 세트와 같은 규칙으로 고른다.
+ * 주제 하나와 그 주제에서 가능한 세트 유형을 각각 무작위로 고른다. 일반·롤플레이는
+ * 3문항, 변화·이슈는 2문항이다. 일반 유형을 채울 수 없는 돌발은 자료의 연결 세트를 쓴다.
  */
 export function buildTopicSet(topics: readonly Topic[] = allTopics, rng: RandomSource = Math.random): Exam {
   const topic = pickRandom(topics, rng);
-  const questions = topic.category === "surprise"
-    ? surpriseSet(topic, rng)
-    : pickRandom(SURVEY_SET_TYPES, rng).map((type) => questionOfType(topic, type, rng));
+  const patterns = RANDOM_SET_PATTERNS.map((pattern) => ({
+    ...pattern, sets: questionSetsOfTypes(topic, pattern.types),
+  })).filter((pattern) => pattern.sets.length > 0);
+  if (topic.category === "surprise" && !patterns.some((pattern) => pattern.types[0] === "description")) {
+    const sets = surpriseSets(topic);
+    if (sets.length) patterns.unshift({ label: "돌발 연결 세트 · 제공 자료의 흐름에 따른 3문항", types: [], sets });
+  }
+  if (!patterns.length) throw new Error("이 주제에는 랜덤 연습 세트를 만들 문항이 부족합니다.");
+  const pattern = pickRandom(patterns, rng);
+  // 연결이 성립하는 세트 안에서 기출 복원 문항을 우선한다.
+  const verifiedCount = (set: Question[]) => set.filter((q) => q.source === "verified").length;
+  const mostVerified = Math.max(...pattern.sets.map(verifiedCount));
+  const questions = pickRandom(pattern.sets.filter((set) => verifiedCount(set) === mostVerified), rng);
   return { ...base("set"), focusTopicId: topic.id,
-    items: questions.map((question, i) => item(i + 1, topic, question, "1토픽 랜덤 연습")) };
+    items: questions.map((question, i) => item(i + 1, topic, question, pattern.label)) };
 }
 
 export function buildSingleQuestion(topics: readonly Topic[] = allTopics, rng: RandomSource = Math.random): Exam {

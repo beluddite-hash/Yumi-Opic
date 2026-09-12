@@ -25,13 +25,14 @@ import {
   type MicProbe,
 } from "@/lib/micShare";
 import { itemNumber } from "@/lib/exam";
-import { examExitLink } from "@/lib/nav";
+import { examExitLink, randomPracticeLink } from "@/lib/nav";
 import { joinTranscript } from "@/lib/transcript";
 import AvaAvatar from "./AvaAvatar";
 import MicLevelMeter from "./MicLevelMeter";
 import ExamResult, { type AnswerRecording } from "./ExamResult";
 import { SavedExpressionsPanel } from "./SavedExpressions";
 import { SourceBadge } from "./ui";
+import QuestionContextReveal from "./QuestionContextReveal";
 
 /** 실전에 가까운 낭독 속도. */
 const SPEECH_RATE = 0.92;
@@ -587,6 +588,9 @@ export default function ExamRunner({
       : `마이크 입력 ${Math.round(micLevel * 100)}%`;
   const hints = item.question.hints ?? [];
   const replayIconVisible = phase === "answering";
+  const modeLabel = exam.mode === "practice" ? "주제별 연습"
+    : exam.mode === "set" || exam.mode === "single" ? randomPracticeLink(exam.mode, exam.randomScope).label
+      : "실전 모의고사";
 
   return (
     <main className={`mx-auto w-full ${isStaycationPractice ? "max-w-6xl" : "max-w-5xl"} px-4 pb-28 pt-6 sm:px-6`}>
@@ -596,7 +600,10 @@ export default function ExamRunner({
           onClick={(event) => { if (unsaved && !window.confirm(LEAVE_CONFIRM)) event.preventDefault(); }}
           className="text-sm text-fg-muted transition hover:text-fg"
         >{exit.label}</Link>
-        <span className="text-xs text-fg-subtle">{title}</span>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs text-fg-subtle">{modeLabel}</span>
+          <QuestionContextReveal key={slot} item={item} showSet={exam.mode === "set"} />
+        </div>
       </div>
 
       <div className="animate-fade-up overflow-hidden rounded-lg border border-exam-line bg-exam-frame text-exam-ink shadow-raised">
@@ -763,7 +770,7 @@ export default function ExamRunner({
               <div className="h-24 overflow-y-auto rounded border border-exam-line bg-exam-frame-2 px-3 py-2.5 text-sm leading-relaxed">
                 {reveal === "script" && (
                   <div>
-                    <div className="mb-1.5 flex flex-wrap items-center gap-2 text-[11px] text-exam-ink-muted"><span className="font-semibold">{item.typeLabel}</span><span>{item.emoji} {item.topicKo}</span><SourceBadge source={item.question.source} /></div>
+                    <div className="mb-1.5 text-[11px]"><SourceBadge source={item.question.source} /></div>
                     <p>{item.question.en}</p>
                   </div>
                 )}
