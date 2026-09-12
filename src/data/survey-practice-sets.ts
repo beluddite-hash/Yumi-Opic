@@ -285,6 +285,11 @@ export const surveyPracticeSets: Partial<Record<string, readonly FixedPracticeSe
       { slot: 6, displayNumber: "6", questionId: "staycation-q6" },
       { slot: 7, displayNumber: "7", questionId: "staycation-q7" },
     ] },
+    { label: "Q8–Q10", items: [
+      { slot: 8, displayNumber: "8", questionId: "staycation-q8" },
+      { slot: 9, displayNumber: "9", questionId: "staycation-q9" },
+      { slot: 10, displayNumber: "10", questionId: "staycation-q10" },
+    ] },
     { label: "Q11–Q13", items: [
       { slot: 11, displayNumber: "11", questionId: "staycation-q11" },
       { slot: 12, displayNumber: "12", questionId: "staycation-q12" },
