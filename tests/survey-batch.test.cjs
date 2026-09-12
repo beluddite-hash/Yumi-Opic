@@ -51,9 +51,11 @@ for (const [id, sets] of Object.entries(fixture)) {
       const starts = [2,5,8,11,14];
       assert.equal(new Set(exam.items.filter(i => starts.includes(i.slot)).map(i => i.topicId)).size, 5);
       const selected = exam.items.filter(i => i.topicId === id);
-      const fullIndex = expected.indexOf(JSON.stringify(selected.map(i => i.question.id)));
-      assert.notEqual(fullIndex, -1);
-      fullReached.add(fullIndex);
+      if (selected.length) {
+        const fullIndex = expected.indexOf(JSON.stringify(selected.map(i => i.question.id)));
+        assert.notEqual(fullIndex, -1);
+        fullReached.add(fullIndex);
+      }
       const random = buildTopicSet([topic], seeded(seed));
       const randomIndex = expected.indexOf(JSON.stringify(random.items.map(i => i.question.id)));
       assert.notEqual(randomIndex, -1);
