@@ -1,5 +1,6 @@
 import {
   FEEDBACK_CATEGORIES,
+  FEEDBACK_CRITERIA,
   feedbackOutputTokenLimit,
   requiresFrontLoadedOpening,
   type FeedbackResponse,
@@ -130,6 +131,7 @@ function buildPrompt(input: {
   return [
     "You are coaching a Korean learner for OPIc speaking practice.",
     "The learner's main goal is storytelling and communicative delivery, NOT grammatical perfection.",
+    `Use these Korean criterion names consistently in feedback: ${FEEDBACK_CRITERIA.map(({ key, label }) => `structure.${key} = ${label}`).join(", ")}. Use 전개·디테일 for the detail category too.`,
     ...structureRules,
     "Evaluate the remaining stages as flow, not as a checklist. Do not force the pattern mechanically when the response is already natural.",
     "Give at most 5 feedback items total. Prefer the highest-impact issues only.",

@@ -1,4 +1,5 @@
 import { countEnglishSentences, hasAnswerText } from "./answers";
+import { emptyFeedbackCounts, summarizeFeedback, type FeedbackCounts } from "./feedback";
 import type { HistoryEntry } from "./storage";
 
 /** 읽은 당시의 문장 수를 남겨, 피드백을 다시 받아도 지난 연습량은 바뀌지 않는다. */
@@ -14,6 +15,7 @@ export interface SpeakingTotals {
   answerSentences: number;
   readCount: number;
   readSentences: number;
+  feedback: FeedbackCounts;
 }
 
 export interface DailySpeaking {
@@ -28,7 +30,7 @@ export function localDay(timestamp: number): string {
 }
 
 export function emptySpeakingTotals(): SpeakingTotals {
-  return { questions: 0, answerSentences: 0, readCount: 0, readSentences: 0 };
+  return { questions: 0, answerSentences: 0, readCount: 0, readSentences: 0, feedback: emptyFeedbackCounts() };
 }
 
 /**
@@ -55,11 +57,14 @@ export function speakingForDay(entry: HistoryEntry, day: string): SpeakingTotals
   // 직접 입력도 포함하는 저장된 답변 기준. 문장 수가 없는 옛 요약은 문제 수만 센다.
   if (localDay(entry.finishedAt) === day) {
     if (result) {
+      const answeredSlots: number[] = [];
       for (const { slot } of result.exam.items) {
         if (!hasAnswerText(result.answers[slot])) continue;
+        answeredSlots.push(slot);
         totals.questions += 1;
         totals.answerSentences += countEnglishSentences(result.answers[slot]);
       }
+      totals.feedback = summarizeFeedback(answeredSlots, result.feedback);
     } else totals.questions = Math.floor(entry.answered);
   }
   for (const practice of savedReadPractices(entry)) {
@@ -92,5 +97,11 @@ export function totalDailySpeaking(daily: DailySpeaking): SpeakingTotals {
     answerSentences: total.answerSentences + entry.answerSentences,
     readCount: total.readCount + entry.readCount,
     readSentences: total.readSentences + entry.readSentences,
+    feedback: {
+      evaluated: total.feedback.evaluated + entry.feedback.evaluated,
+      topic: total.feedback.topic + entry.feedback.topic,
+      detail: total.feedback.detail + entry.feedback.detail,
+      feeling: total.feedback.feeling + entry.feedback.feeling,
+    },
   }), emptySpeakingTotals());
 }

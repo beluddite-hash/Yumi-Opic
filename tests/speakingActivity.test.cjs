@@ -8,6 +8,7 @@ const {
 const today = new Date(2026, 8, 12, 14).getTime();
 const yesterday = new Date(2026, 8, 11, 14).getTime();
 const day = localDay(today);
+const noFeedback = { evaluated: 0, topic: 0, detail: 0, feeling: 0 };
 
 function entry(overrides = {}) {
   return {
@@ -23,7 +24,7 @@ function entry(overrides = {}) {
 
 test('실제 답변이 있는 문제 수와 각 답변의 문장 수를 합산한다', () => {
   assert.deepEqual(speakingForDay(entry(), day), {
-    questions: 2, answerSentences: 3, readCount: 0, readSentences: 0,
+    questions: 2, answerSentences: 3, readCount: 0, readSentences: 0, feedback: noFeedback,
   });
 });
 
@@ -40,7 +41,7 @@ test('지난 문제를 오늘 읽은 횟수만 더하고 읽은 당시 문장 �
   old.result.feedback[1] = { improvedAnswer: 'A new rewrite with a different length.' };
   old.result.readCounts = { 1: 4 };
   assert.deepEqual(speakingForDay(old, day), {
-    questions: 0, answerSentences: 0, readCount: 3, readSentences: 18,
+    questions: 0, answerSentences: 0, readCount: 3, readSentences: 18, feedback: noFeedback,
   });
 });
 
@@ -67,14 +68,14 @@ test('여러 날의 기존 누적 횟수에 오늘 읽기를 더해도 오늘 �
 
 test('답변 텍스트가 없는 옛 요약에서는 문장 수를 만들어내지 않는다', () => {
   assert.deepEqual(speakingForDay(entry({ result: undefined }), day), {
-    questions: 2, answerSentences: 0, readCount: 0, readSentences: 0,
+    questions: 2, answerSentences: 0, readCount: 0, readSentences: 0, feedback: noFeedback,
   });
 });
 
 test('최근 다섯 회 밖의 연습과 같은 문제를 다시 푼 새 회차도 합산한다', () => {
   const history = Array.from({ length: 8 }, (_, i) => entry({ id: String(i) }));
   const daily = mergeDailySpeaking(null, history, today);
-  assert.deepEqual(totalDailySpeaking(daily), { questions: 16, answerSentences: 24, readCount: 0, readSentences: 0 });
+  assert.deepEqual(totalDailySpeaking(daily), { questions: 16, answerSentences: 24, readCount: 0, readSentences: 0, feedback: noFeedback });
   assert.deepEqual(mergeDailySpeaking(daily, history, today), daily, '다시 읽기만 해서는 합계가 늘지 않는다');
 });
 
@@ -102,4 +103,22 @@ test('기기 현지 자정에 오늘 합계를 새로 시작한다', () => {
   assert.equal(localDay(before), '2026-09-12');
   assert.equal(localDay(after), '2026-09-13');
   assert.deepEqual(totalDailySpeaking(mergeDailySpeaking(daily, history, after)), emptySpeakingTotals());
+});
+
+test('오늘 완료한 답변의 평가만 합산하고 늦은 재분석은 해당 회차 합계를 교체한다', () => {
+  const current = entry();
+  current.result.feedback = {
+    1: { structure: { topic: 'good', detail: 'good', feeling: 'needs_work' } },
+    3: { structure: { topic: 'good', detail: 'good', feeling: 'good' } },
+  };
+  const old = { ...current, id: 'old', finishedAt: yesterday, updatedAt: today };
+  const initial = mergeDailySpeaking(null, [current, old], today);
+  assert.deepEqual(totalDailySpeaking(initial).feedback, { evaluated: 1, topic: 1, detail: 1, feeling: 0 });
+  current.result.feedback[1].structure.topic = 'needs_work';
+  current.result.feedback[2] = { structure: { topic: 'good', detail: 'needs_work', feeling: 'good' } };
+  const revised = totalDailySpeaking(mergeDailySpeaking(initial, [current, old], today));
+  assert.equal(revised.questions, 2);
+  assert.deepEqual(revised.feedback, { evaluated: 2, topic: 1, detail: 1, feeling: 1 });
+  assert.deepEqual(totalDailySpeaking(initial).feedback, { evaluated: 1, topic: 1, detail: 1, feeling: 0 });
+  assert.deepEqual(totalDailySpeaking(mergeDailySpeaking(initial, [current, old], new Date(2026, 8, 13).getTime())).feedback, noFeedback);
 });

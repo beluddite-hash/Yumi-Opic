@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { feedbackCategoryLabel } from "@/lib/feedback";
+import { feedbackCategoryLabel, feedbackDisplayText } from "@/lib/feedback";
 import {
   expressionsForQuestion,
   loadExpressions,
@@ -112,15 +112,15 @@ function ExpressionGroup({ title, entries, onRemove }: {
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] text-exam-ink-muted">
-                  {entry.category ? `${feedbackCategoryLabel[entry.category]} · ` : ""}{entry.title}
+                  {entry.category ? `${feedbackCategoryLabel[entry.category]} · ` : ""}{feedbackDisplayText(entry.title)}
                 </p>
                 {entry.example && <p className="mt-1 text-sm leading-relaxed text-exam-ink">{entry.example}</p>}
-                {entry.body && <p className="mt-1 text-xs leading-relaxed text-exam-ink-muted">{entry.body}</p>}
+                {entry.body && <p className="mt-1 text-xs leading-relaxed text-exam-ink-muted">{feedbackDisplayText(entry.body)}</p>}
               </div>
               <button
                 type="button"
                 onClick={() => onRemove(entry.id)}
-                aria-label={`${entry.title} 저장 해제`}
+                aria-label={`${feedbackDisplayText(entry.title)} 저장 해제`}
                 className="shrink-0 rounded border border-exam-line px-2 py-0.5 text-[11px] text-exam-ink-muted transition hover:text-exam-ink"
               >
                 지우기

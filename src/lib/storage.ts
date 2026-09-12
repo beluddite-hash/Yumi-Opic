@@ -8,7 +8,7 @@ import {
   topicIdsForChoices,
 } from "../data";
 import type { Exam, ExamItem } from "./types";
-import { isOpicFeedback, type OpicFeedback } from "./feedback";
+import { emptyFeedbackCounts, FEEDBACK_CRITERIA, isOpicFeedback, type FeedbackCounts, type OpicFeedback } from "./feedback";
 import { mergeDailySpeaking, totalDailySpeaking, type DailySpeaking, type ReadPractice, type SpeakingTotals } from "./speakingActivity";
 const SETTINGS_KEY = "yumi-opic:settings";
 const HISTORY_KEY = "yumi-opic:history";
@@ -204,9 +204,20 @@ function readDailySpeaking(): DailySpeaking | null {
     const raw: unknown = JSON.parse(window.localStorage.getItem(DAILY_SPEAKING_KEY) ?? "null");
     if (!isRecord(raw) || typeof raw.day !== "string" || !isRecord(raw.entries)) return null;
     const fields = ["questions", "answerSentences", "readCount", "readSentences"] as const;
-    const entries = Object.fromEntries(Object.entries(raw.entries).filter(([, entry]) =>
-      isRecord(entry) && fields.every((field) => Number.isSafeInteger(entry[field]) && Number(entry[field]) >= 0),
-    )) as Record<string, SpeakingTotals>;
+    const entries = Object.fromEntries(Object.entries(raw.entries).flatMap(([id, entry]) => {
+      if (!isRecord(entry) || !fields.every((field) => Number.isSafeInteger(entry[field]) && Number(entry[field]) >= 0)) return [];
+      const saved = entry.feedback;
+      // 이전 공부량 캐시는 살리고, 없는/손상된 평가는 미평가로 둔다.
+      const valid = isRecord(saved) && Number.isSafeInteger(saved.evaluated)
+        && Number(saved.evaluated) >= 0 && Number(saved.evaluated) <= Number(entry.questions)
+        && FEEDBACK_CRITERIA.every(({ key }) => Number.isSafeInteger(saved[key])
+          && Number(saved[key]) >= 0 && Number(saved[key]) <= Number(saved.evaluated));
+      return [[id, {
+        questions: Number(entry.questions), answerSentences: Number(entry.answerSentences),
+        readCount: Number(entry.readCount), readSentences: Number(entry.readSentences),
+        feedback: valid ? saved as unknown as FeedbackCounts : emptyFeedbackCounts(),
+      }]];
+    }));
     return { day: raw.day, entries };
   } catch { return null; }
 }

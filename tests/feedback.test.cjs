@@ -1,5 +1,21 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { summarizeFeedback, emptyFeedbackCounts, FEEDBACK_CRITERIA } = require('../.test-build/lib/feedback');
+
+test('완료한 N문항의 좋음만 집계하고 미평가와 범위 밖 피드백을 구분한다', () => {
+  const feedback = (topic, detail, feeling) => ({ structure: { topic, detail, feeling } });
+  const bySlot = {
+    2: feedback('good', 'good', 'needs_work'),
+    4: feedback('needs_work', 'good', 'good'),
+    99: feedback('good', 'good', 'good'),
+  };
+  assert.deepEqual(summarizeFeedback([2, 4, 6], bySlot), { evaluated: 2, topic: 1, detail: 2, feeling: 1 });
+  assert.deepEqual(summarizeFeedback([4], bySlot), { evaluated: 1, topic: 0, detail: 1, feeling: 1 });
+  assert.deepEqual(summarizeFeedback([], bySlot), emptyFeedbackCounts());
+  assert.deepEqual(summarizeFeedback([6], bySlot), emptyFeedbackCounts());
+  assert.deepEqual(summarizeFeedback([2, 2], bySlot), summarizeFeedback([2], bySlot));
+  assert.deepEqual(FEEDBACK_CRITERIA.map(({ label }) => label), ['핵심 제시', '전개·디테일', '감정·의미']);
+});
 const {
   requiresFrontLoadedOpening, isOpicFeedback, readFeedbackResponse, feedbackRewrite, feedbackOutputTokenLimit,
 } = require('../.test-build/lib/feedback');
