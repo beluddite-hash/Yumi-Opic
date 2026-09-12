@@ -93,6 +93,56 @@ test('되돌아가 읽어도 읽은 만큼 센다', () => {
   assert.equal(coverage(TARGET, `${middle} ${head} ${tail}`), 1);
 });
 
+/*
+ * 되풀이되는 구가 있는 글. `the beach` 가 세 곳에 나온다.
+ * I(0) like(1) the(2) beach(3) near(4) my(5) home(6)
+ * We(7) walk(8) along(9) the(10) beach(11) every(12) evening(13)
+ * and(14) we(15) eat(16) near(17) the(18) beach(19)
+ */
+const REPEATED = 'I like the beach near my home. We walk along the beach every evening, and we eat near the beach.';
+
+test('한 번 말한 구는 한 자리만 켠다', () => {
+  // 겹치는 자리를 모두 켜면 두 낱말을 말해 여섯 낱말을 읽은 것이 된다.
+  assert.deepEqual(markedAt(markReadWords(REPEATED, 'the beach')), [2, 3]);
+  assert.equal(coverage(REPEATED, 'the beach'), 2 / 20);
+});
+
+test('같은 구를 두 번 말하면 두 자리가 켜진다', () => {
+  // 말한 만큼만 늘어난다. 켜는 자리는 읽던 자리에서 가까운 쪽부터다.
+  assert.deepEqual(markedAt(markReadWords(REPEATED, 'the beach the beach')), [2, 3, 10, 11]);
+});
+
+test('이어진 구간이 긴 자리를 고른다', () => {
+  // `the beach` 만 보면 세 곳이 똑같다. 앞뒤로 더 이어지는 자리가 실제로 읽은 자리다.
+  assert.deepEqual(markedAt(markReadWords(REPEATED, 'along the beach')), [9, 10, 11]);
+  assert.deepEqual(markedAt(markReadWords(REPEATED, 'we eat near the beach')), [15, 16, 17, 18, 19]);
+});
+
+test('켜진 낱말은 말한 낱말 수를 넘지 못한다', () => {
+  /*
+   * 부풀림이 없다는 것을 글 전체에서 확인한다. 이 규칙이 깨지면 글의 절반만 읽고도
+   * 통과선을 넘는다.
+   */
+  const words = splitForReading(REPEATED).filter((t) => t.word).map((t) => t.text);
+  for (let at = 0; at < words.length; at++) {
+    for (const length of [2, 3, 5, 8]) {
+      const heard = words.slice(at, at + length).join(' ');
+      const said = countReadWords(heard);
+      if (said === 0) continue;
+      const covered = markReadWords(REPEATED, heard).filter(Boolean).length;
+      assert.ok(covered <= said, `"${heard}" → 말한 ${said}, 켜진 ${covered}`);
+    }
+  }
+});
+
+test('되풀이되는 구가 있어도 다 읽으면 전부 따라온 것으로 본다', () => {
+  assert.equal(coverage(REPEATED, REPEATED), 1);
+  // 읽은 비율과 커버리지가 어긋나지 않는다.
+  const words = splitForReading(REPEATED).filter((t) => t.word).map((t) => t.text);
+  const half = words.slice(0, 10).join(' ');
+  assert.equal(coverage(REPEATED, half), 0.5);
+});
+
 test('표시는 읽을 글의 낱말 자리를 그대로 따른다', () => {
   const marks = markReadWords(TARGET, 'usually in the morning');
   assert.equal(marks.length, countReadWords(TARGET));

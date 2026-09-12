@@ -18,6 +18,7 @@ import {
   markReadWords,
   splitForReading,
   READ_COVERAGE_PASS,
+  READ_IDLE_STOP_MS,
 } from "@/lib/readAloud";
 import { isSpeechRecognitionSupported, startDictation, type DictationHandle } from "@/lib/speech";
 import {
@@ -261,6 +262,10 @@ function RewriteCompare({ before, after, feedback, answer, reading: readingContr
   const readSoFar = useRef<boolean[] | null>(null);
   /** 이번 읽기에서 횟수를 이미 셌는지. 통과선을 넘는 순간 한 번만 센다. */
   const counted = useRef(false);
+  /** 지금까지 표시된 낱말 수. 새 낱말이 붙었는지 보는 데 쓴다. */
+  const coveredSoFar = useRef(0);
+  /** 통과선을 넘긴 뒤 읽기가 멈췄는지 재는 시계. */
+  const idleStop = useRef(0);
   const dictation = useRef<DictationHandle | null>(null);
   // 프롭은 렌더마다 새 객체로 온다. 콜백이 낡은 값을 잡지 않도록 여기에 담아 둔다.
   const onRead = useRef(readingControls?.onRead);
@@ -271,10 +276,30 @@ function RewriteCompare({ before, after, feedback, answer, reading: readingContr
   // 브라우저에만 있는 값이라 서버가 그린 첫 화면과 어긋나지 않도록 나중에 읽는다.
   useEffect(() => { setSupported(isSpeechRecognitionSupported()); }, []);
 
-  // 화면을 떠나면 마이크를 놓아 준다.
-  useEffect(() => () => { dictation.current?.abort(); dictation.current = null; }, []);
+  const clearIdleStop = () => {
+    if (!idleStop.current) return;
+    window.clearTimeout(idleStop.current);
+    idleStop.current = 0;
+  };
+
+  /** 읽기가 멈춘 것으로 볼 시각을 지금부터 다시 잰다. */
+  const armIdleStop = () => {
+    clearIdleStop();
+    idleStop.current = window.setTimeout(() => {
+      idleStop.current = 0;
+      stopReading();
+    }, READ_IDLE_STOP_MS);
+  };
+
+  // 화면을 떠나면 마이크를 놓아 준다. 문항 카드를 접어도 여기를 지난다.
+  useEffect(() => () => {
+    if (idleStop.current) window.clearTimeout(idleStop.current);
+    dictation.current?.abort();
+    dictation.current = null;
+  }, []);
 
   const stopReading = () => {
+    clearIdleStop();
     setListening(false);
     // stop() 은 말하던 마지막 문장까지 받아 적고 끝난다.
     dictation.current?.stop();
@@ -283,6 +308,8 @@ function RewriteCompare({ before, after, feedback, answer, reading: readingContr
   const startReading = () => {
     readSoFar.current = null;
     counted.current = false;
+    coveredSoFar.current = 0;
+    clearIdleStop();
     setMarks(null);
     setMicError(false);
     dictation.current?.abort();
@@ -292,21 +319,33 @@ function RewriteCompare({ before, after, feedback, answer, reading: readingContr
         const next = markReadWords(target.current, said, readSoFar.current ?? undefined);
         readSoFar.current = next;
         setMarks(next);
-        /*
-         * 읽은 횟수는 여기서만 센다. 통과선을 넘은 순간 한 번 세고 마이크는 그대로
-         * 열어 둔다. 남은 대목을 마저 읽으려는 사람을 끊을 이유가 없다.
-         */
+
+        /* 읽은 횟수는 여기서만 센다. 통과선을 넘은 순간 한 번 센다. */
         if (!counted.current && coverageRatio(next) >= READ_COVERAGE_PASS) {
           counted.current = true;
           onRead.current?.();
         }
+
+        /*
+         * 통과선을 넘긴 뒤로는 새 낱말이 붙을 때마다 시계를 되돌린다. 남은 대목을
+         * 마저 읽는 동안에는 끊기지 않고, 읽기를 멈추면 그때부터 시계가 흘러 마이크가
+         * 닫힌다. 무음으로 인식 세션이 끊겼다 다시 켜질 때도 `onUpdate` 는 같은
+         * 텍스트를 한 번 더 넘기므로, 시계를 되돌릴 일은 새 낱말이 붙은 때로 한정한다.
+         */
+        const coveredNow = next.reduce((sum, mark) => (mark ? sum + 1 : sum), 0);
+        if (coveredNow > coveredSoFar.current) {
+          coveredSoFar.current = coveredNow;
+          if (counted.current) armIdleStop();
+        }
       },
       onError: (code) => {
         if (code !== "not-allowed" && code !== "service-not-allowed" && code !== "audio-capture") return;
+        clearIdleStop();
         setMicError(true);
         setListening(false);
       },
       onEnd: () => {
+        clearIdleStop();
         dictation.current = null;
         setListening(false);
       },

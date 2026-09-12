@@ -116,3 +116,32 @@ test('데스크톱은 지금처럼 continuous 한 세션에서 이어서 받는�
     assert.equal(recognizers.length, 1);
   });
 });
+
+test('받아쓰기는 한 번에 하나만 돈다', () => {
+  withDictation({ userAgent: DESKTOP_CHROME, maxTouchPoints: 0 }, ({ recognizers, current, flush }) => {
+    const first = listen();
+    current().send([FINAL('I like running')]);
+
+    /*
+     * 브라우저의 인식기는 사실상 하나다. 둘째를 켤 때 앞의 것을 끊지 않으면, 앞의
+     * 것이 `aborted` 로 끊긴 뒤 스스로 다시 켜져 둘째를 끊고 둘이 서로를 걷어찬다.
+     */
+    const second = listen();
+    assert.equal(first.state.ended, true);
+    // 끊기기 전까지 받아 적은 말은 남는다.
+    assert.equal(first.state.draft.committed, 'I like running');
+
+    // 앞의 것은 다시 켜지지 않는다. 지금 도는 인식기는 둘째 것뿐이다.
+    const running = recognizers.length;
+    flush();
+    assert.equal(recognizers.length, running);
+
+    current().send([FINAL('and swimming')]);
+    assert.equal(second.state.draft.committed, 'and swimming');
+    assert.equal(second.state.ended, false);
+
+    second.handle.stop();
+    current().end();
+    assert.equal(second.state.ended, true);
+  });
+});

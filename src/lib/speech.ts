@@ -360,15 +360,35 @@ export interface DictationHandle {
 }
 
 /**
+ * 지금 마이크를 쥐고 있는 받아쓰기.
+ *
+ * 브라우저의 인식기는 사실상 하나뿐이다. 두 번째를 start 하면 첫 번째가 `aborted`
+ * 로 끊기는데, 아래 onerror 는 그 코드를 「onend 가 알아서 다시 켠다」는 신호로 보고
+ * 넘긴다. 그래서 첫 번째가 300ms 뒤 되살아나 두 번째를 끊고, 두 번째도 같은 이유로
+ * 되살아난다. 결과 화면에서 두 문항의 따라 읽기를 잇따라 켜면 둘이 서로를 0.3초마다
+ * 걷어차며 어느 쪽도 받아 적지 못한다.
+ *
+ * 그래서 새로 켜는 쪽이 앞의 것을 여기서 확실히 끊고(`abort`) 자리를 넘겨받는다.
+ * 부르는 쪽마다 따로 챙기게 하면 화면이 늘어날 때마다 같은 실수가 되풀이된다.
+ */
+let liveDictation: DictationHandle | null = null;
+
+/**
  * 마이크 받아쓰기를 시작한다.
  *
  * `onUpdate` 는 조각이 아니라 **세션 전체 텍스트**를 넘긴다. 부르는 쪽은 매번
  * 덮어쓰기만 하면 되고, 같은 결과가 두 번 와도 답변이 늘어나지 않는다.
+ *
+ * 한 번에 하나만 돈다. 앞의 받아쓰기는 여기서 끊긴다.
  */
 export function startDictation(handlers: DictationHandlers): DictationHandle | null {
   const Ctor = getRecognitionCtor();
   if (!Ctor) return null;
+  liveDictation?.abort();
   const continuous = isDesktopAgent(window.navigator);
+
+  /** 이 세션이 돌려준 손잡이. 자리를 내놓을 때 저것이 나인지 보는 데 쓴다. */
+  let handle: DictationHandle | null = null;
 
   /** 사용자가 멈췄다. 더는 자동으로 다시 켜지 않는다. */
   let closing = false;
@@ -406,6 +426,7 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
       window.clearTimeout(restartTimer);
       restartTimer = 0;
     }
+    if (liveDictation === handle) liveDictation = null;
     handlers.onEnd?.();
   };
 
@@ -501,7 +522,7 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
     return null;
   }
 
-  return {
+  handle = {
     stop: () => {
       if (dead || closing) return;
       closing = true;
@@ -546,6 +567,8 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
       finish();
     },
   };
+  liveDictation = handle;
+  return handle;
 }
 
 export type { TranscriptDraft };
