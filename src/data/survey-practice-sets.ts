@@ -5,6 +5,116 @@ import type { FixedPracticeSet } from "../lib/types";
  * 다른 서베이 주제도 키와 세트 데이터를 추가하면 같은 빌더를 사용한다.
  */
 export const surveyPracticeSets: Partial<Record<string, readonly FixedPracticeSet[]>> = {
+  home: [
+    { label: "COMBO 1", items: [
+      {"slot":1,"displayNumber":"2","questionId":"home-set1-q2"},
+      {"slot":2,"displayNumber":"3","questionId":"home-set1-q3"},
+      {"slot":3,"displayNumber":"4","questionId":"home-set1-q4"},
+    ] },
+    { label: "COMBO 2", items: [
+      {"slot":4,"displayNumber":"2","questionId":"home-set2-q2"},
+      {"slot":5,"displayNumber":"3","questionId":"home-set2-q3"},
+      {"slot":6,"displayNumber":"4","questionId":"home-set2-q4"},
+    ] },
+    { label: "COMBO 3", items: [
+      {"slot":7,"displayNumber":"5","questionId":"home-set3-q5"},
+      {"slot":8,"displayNumber":"6","questionId":"home-set3-q6"},
+      {"slot":9,"displayNumber":"7","questionId":"home-set3-q7"},
+    ] },
+    { label: "COMBO 4", items: [
+      {"slot":10,"displayNumber":"5","questionId":"home-set4-q5"},
+      {"slot":11,"displayNumber":"6","questionId":"home-set4-q6"},
+      {"slot":12,"displayNumber":"7","questionId":"home-set4-q7"},
+    ] },
+    { label: "COMBO 5", items: [
+      {"slot":13,"displayNumber":"8","questionId":"home-set5-q8"},
+      {"slot":14,"displayNumber":"9","questionId":"home-set5-q9"},
+      {"slot":15,"displayNumber":"10","questionId":"home-set5-q10"},
+    ] },
+    { label: "COMBO 6", items: [
+      {"slot":16,"displayNumber":"8","questionId":"home-set6-q8"},
+      {"slot":17,"displayNumber":"9","questionId":"home-set6-q9"},
+      {"slot":18,"displayNumber":"10","questionId":"home-set6-q10"},
+    ] },
+    { label: "ROLE-PLAY COMBO 1", items: [
+      {"slot":19,"displayNumber":"11","questionId":"home-roleplay1-q11"},
+      {"slot":20,"displayNumber":"12","questionId":"home-roleplay1-q12"},
+      {"slot":21,"displayNumber":"13","questionId":"home-roleplay1-q13"},
+    ] },
+    { label: "ROLE-PLAY COMBO 2", items: [
+      {"slot":22,"displayNumber":"11","questionId":"home-roleplay2-q11"},
+      {"slot":23,"displayNumber":"12","questionId":"home-roleplay2-q12"},
+      {"slot":24,"displayNumber":"13","questionId":"home-roleplay2-q13"},
+    ] },
+    { label: "ROLE-PLAY COMBO 3", items: [
+      {"slot":25,"displayNumber":"11","questionId":"home-roleplay3-q11"},
+      {"slot":26,"displayNumber":"12","questionId":"home-roleplay3-q12"},
+      {"slot":27,"displayNumber":"13","questionId":"home-roleplay3-q13"},
+    ] },
+    { label: "ADVANCE COMBO 1", items: [
+      {"slot":28,"displayNumber":"14","questionId":"home-advanced1-q14"},
+      {"slot":29,"displayNumber":"15","questionId":"home-advanced1-q15"},
+    ] },
+    { label: "ADVANCE COMBO 2", items: [
+      {"slot":30,"displayNumber":"14","questionId":"home-advanced2-q14"},
+      {"slot":31,"displayNumber":"15","questionId":"home-advanced2-q15"},
+    ] },
+    { label: "ADVANCE COMBO 3", items: [
+      {"slot":32,"displayNumber":"14","questionId":"home-advanced3-q14"},
+      {"slot":33,"displayNumber":"15","questionId":"home-advanced3-q15"},
+    ] },
+  ],
+  shopping: [
+    { label: "COMBO 1", items: [
+      {"slot":1,"displayNumber":"2","questionId":"shopping-set1-q2"},
+      {"slot":2,"displayNumber":"3","questionId":"shopping-set1-q3"},
+      {"slot":3,"displayNumber":"4","questionId":"shopping-set1-q4"},
+    ] },
+    { label: "COMBO 2", items: [
+      {"slot":4,"displayNumber":"2","questionId":"shopping-set2-q2"},
+      {"slot":5,"displayNumber":"3","questionId":"shopping-set2-q3"},
+      {"slot":6,"displayNumber":"4","questionId":"shopping-set2-q4"},
+    ] },
+    { label: "COMBO 3", items: [
+      {"slot":7,"displayNumber":"2","questionId":"shopping-set3-q2"},
+      {"slot":8,"displayNumber":"3","questionId":"shopping-set3-q3"},
+      {"slot":9,"displayNumber":"4","questionId":"shopping-set3-q4"},
+    ] },
+    { label: "COMBO 4", items: [
+      {"slot":10,"displayNumber":"5","questionId":"shopping-set4-q5"},
+      {"slot":11,"displayNumber":"6","questionId":"shopping-set4-q6"},
+      {"slot":12,"displayNumber":"7","questionId":"shopping-set4-q7"},
+    ] },
+    { label: "COMBO 5", items: [
+      {"slot":13,"displayNumber":"5","questionId":"shopping-set5-q5"},
+      {"slot":14,"displayNumber":"6","questionId":"shopping-set5-q6"},
+      {"slot":15,"displayNumber":"7","questionId":"shopping-set5-q7"},
+    ] },
+    { label: "COMBO 6", items: [
+      {"slot":16,"displayNumber":"8","questionId":"shopping-set6-q8"},
+      {"slot":17,"displayNumber":"9","questionId":"shopping-set6-q9"},
+      {"slot":18,"displayNumber":"10","questionId":"shopping-set6-q10"},
+    ] },
+    { label: "COMBO 7", items: [
+      {"slot":19,"displayNumber":"8","questionId":"shopping-set7-q8"},
+      {"slot":20,"displayNumber":"9","questionId":"shopping-set7-q9"},
+      {"slot":21,"displayNumber":"10","questionId":"shopping-set7-q10"},
+    ] },
+    { label: "ROLE-PLAY COMBO 1", items: [
+      {"slot":22,"displayNumber":"11","questionId":"shopping-roleplay1-q11"},
+      {"slot":23,"displayNumber":"12","questionId":"shopping-roleplay1-q12"},
+      {"slot":24,"displayNumber":"13","questionId":"shopping-roleplay1-q13"},
+    ] },
+    { label: "ROLE-PLAY COMBO 2", items: [
+      {"slot":25,"displayNumber":"11","questionId":"shopping-roleplay2-q11"},
+      {"slot":26,"displayNumber":"12","questionId":"shopping-roleplay2-q12"},
+      {"slot":27,"displayNumber":"13","questionId":"shopping-roleplay2-q13"},
+    ] },
+    { label: "ADVANCE COMBO 1", items: [
+      {"slot":28,"displayNumber":"14","questionId":"shopping-advanced1-q14"},
+      {"slot":29,"displayNumber":"15","questionId":"shopping-advanced1-q15"},
+    ] },
+  ],
   music: [
     { label: "COMBO 1", items: [
       {"slot":1,"displayNumber":"2","questionId":"music-set1-q2"},
