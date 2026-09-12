@@ -5,6 +5,32 @@ import type { FixedPracticeSet } from "../lib/types";
  * 다른 서베이 주제도 키와 세트 데이터를 추가하면 같은 빌더를 사용한다.
  */
 export const surveyPracticeSets: Partial<Record<string, readonly FixedPracticeSet[]>> = {
+  music: [
+    { label: "COMBO 1", items: [
+      {"slot":1,"displayNumber":"2","questionId":"music-set1-q2"},
+      {"slot":2,"displayNumber":"3","questionId":"music-set1-q3"},
+      {"slot":3,"displayNumber":"4","questionId":"music-set1-q4"},
+    ] },
+    { label: "COMBO 2", items: [
+      {"slot":4,"displayNumber":"5","questionId":"music-set2-q5"},
+      {"slot":5,"displayNumber":"6","questionId":"music-set2-q6"},
+      {"slot":6,"displayNumber":"7","questionId":"music-set2-q7"},
+    ] },
+    { label: "COMBO 3", items: [
+      {"slot":7,"displayNumber":"8","questionId":"music-set3-q8"},
+      {"slot":8,"displayNumber":"9","questionId":"music-set3-q9"},
+      {"slot":9,"displayNumber":"10","questionId":"music-set3-q10"},
+    ] },
+    { label: "ROLE-PLAY COMBO", items: [
+      {"slot":10,"displayNumber":"11","questionId":"music-roleplay1-q11"},
+      {"slot":11,"displayNumber":"12","questionId":"music-roleplay1-q12"},
+      {"slot":12,"displayNumber":"13","questionId":"music-roleplay1-q13"},
+    ] },
+    { label: "ADVANCED COMBO", items: [
+      {"slot":13,"displayNumber":"14","questionId":"music-advanced1-q14"},
+      {"slot":14,"displayNumber":"15","questionId":"music-advanced1-q15"},
+    ] },
+  ],
   beach: [
     { label: "COMBO 1", items: [
       {"slot":1,"displayNumber":"2","questionId":"beach-set1-q2"},

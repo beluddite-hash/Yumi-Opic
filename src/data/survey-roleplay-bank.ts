@@ -29,9 +29,9 @@ export const surveyRoleplayQuestionsByTopic: Record<string, Question[]> = {
   ],
 
   music: [
-    rp("music-rp11", "roleplay_ask", "I'd like to give you a situation and ask you to act it out. You want to buy an MP3 player, and your friend knows a lot about them. Call your friend and ask three or four questions that will help you decide what to buy.", "MP3 플레이어를 사려고 하는데 친구가 관련 제품을 잘 압니다. 친구에게 전화해 구매 결정에 도움이 되는 질문을 3~4가지 하세요."),
-    rp("music-rp12", "roleplay_problem", "I'm sorry, but there is a problem I need you to resolve. You borrowed your friend's MP3 player and accidentally broke it. Call your friend, explain what happened and the condition of the player, and offer two or three alternatives to solve the problem.", "친구에게 빌린 MP3 플레이어를 실수로 고장 냈습니다. 친구에게 전화해 상황과 현재 상태를 설명하고 해결책 2~3가지를 제안하세요.", "verified", ["music-rp11"]),
-    rp("music-rp13", "roleplay_experience", "That's the end of the situation. Tell me about a time when a music device or another piece of equipment you were using broke or stopped working. What exactly happened, and how did you deal with the problem?", "음악 기기나 사용하던 장비가 고장 나거나 작동을 멈춘 경험을 말하세요. 정확히 무슨 일이 있었고 어떻게 대처했는지 설명하세요.", "verified", ["music-rp12"]),
+    rp("music-roleplay1-q11", "roleplay_ask", "I'd like to give you a situation and ask you to act it out. You want to buy an MP3 player. You have a friend who knows a lot about MP3 players. Call your friend and ask three or four questions to get information about buying an MP3 player.", "상황을 드릴 테니 역할극을 해 주세요. MP3 플레이어를 사고 싶습니다. MP3 플레이어에 대해 잘 아는 친구가 있습니다. 친구에게 전화해서 구매에 관한 정보를 얻을 질문을 서너 가지 해 주세요.", "provided"),
+    rp("music-roleplay1-q12", "roleplay_problem", "I'm sorry, but there's a problem that I need you to resolve. You have borrowed your friend's MP3 player, but broke it by accident. Call your friend, explain how you broke it and what the current condition is like, and then give two or three alternatives in order to get another working MP3 player for your friend.", "죄송하지만 해결해 주셔야 할 문제가 있습니다. 친구의 MP3 플레이어를 빌렸다가 실수로 고장 냈습니다. 친구에게 전화해서 어떻게 고장 냈고 현재 상태가 어떤지 설명한 뒤 친구에게 작동하는 다른 MP3 플레이어를 마련해 줄 두세 가지 대안을 제시해 주세요.", "provided", ["music-roleplay1-q11"]),
+    rp("music-roleplay1-q13", "roleplay_experience", "That's the end of the situation. Tell me about a time when a piece of equipment broke. What exactly happened, and how did you fix the problem? Tell me everything about that experience.", "상황극은 여기까지입니다. 장비가 고장 났던 경험을 말해 주세요. 정확히 무슨 일이 있었고 어떻게 문제를 해결했나요? 그 경험의 모든 것을 말해 주세요.", "provided", ["music-roleplay1-q12"]),
   ],
 
   beach: [
