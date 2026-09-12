@@ -11,36 +11,23 @@ const { repeatPracticeLink } = require('../.test-build/lib/nav');
 const { questionAudioUrl } = require('../.test-build/lib/questionAudio');
 const manifest = require('../src/data/audio-manifest.json');
 
-/** 제공 자료 그대로인 문항. 뒤에 붙인 출제 유형 기반 보강 문항과 구분한다. */
-const providedQuestions = (topic) => topic.questions.filter(q => q.source === 'provided');
-/** 번호별 유형 세트를 채우려고 자료 뒤에 덧붙인 보강 문항. */
-const adaptedQuestions = (topic) => topic.questions.filter(q => q.source === 'adapted');
-
-test('all 35 supplied surprise questions keep the supplied topic, numbering, title, wording and order', () => {
+test('all 35 surprise questions preserve the supplied topic, numbering, title, wording and order', () => {
   const source = readFileSync(path.join(__dirname, 'fixtures/surprise-questions.md'), 'utf8');
   const sections = source.split(/^## \d+\. /m).slice(1);
   assert.equal(bank.surpriseTopics.length, 7);
-  assert.equal(bank.surpriseTopics.reduce((sum, t) => sum + providedQuestions(t).length, 0), 35);
-  assert.equal(bank.surpriseQuestionCount, bank.surpriseTopics.reduce((sum, t) => sum + t.questions.length, 0));
-  assert.deepEqual(bank.surpriseTopics.map(t => providedQuestions(t).length), [7, 5, 5, 6, 4, 4, 4]);
+  assert.equal(bank.surpriseQuestionCount, 35);
+  assert.deepEqual(bank.surpriseTopics.map(t => t.questions.length), [7, 5, 5, 6, 4, 4, 4]);
   sections.forEach((section, i) => {
     const topic = bank.surpriseTopics[i];
     assert.equal(topic.en, section.split('\n')[0]);
     assert.equal(topic.category, 'surprise');
     const expected = [...section.matchAll(/\*\*(\d+(?:-[AB])?)\. (.*?)\*\*\s*\n(.*?)(?=\n\n|$)/gs)]
       .map(([, number, title, en]) => ({ number, title, en: en.trim() }));
-    // 자료 문항은 자료 순서 그대로 앞에 오고, 보강 문항은 그 뒤에만 붙는다.
-    assert.deepEqual(topic.questions.slice(0, expected.length).map(({ number, title, en }) => ({ number, title, en })), expected);
-    assert.deepEqual(topic.questions.slice(expected.length), adaptedQuestions(topic));
-    for (const q of providedQuestions(topic)) {
+    assert.deepEqual(topic.questions.map(({ number, title, en }) => ({ number, title, en })), expected);
+    for (const q of topic.questions) {
       assert.match(q.ko, /[가-힣]/);
+      assert.equal(q.source, 'provided');
       assert.ok(manifest.questions[q.id]);
-    }
-    // 보강 문항은 자료 번호를 쓰지 않고 출제 유형 기반으로 표시한다.
-    for (const q of adaptedQuestions(topic)) {
-      assert.match(q.ko, /[가-힣]/);
-      assert.equal(q.number, undefined);
-      assert.ok(q.title);
     }
   });
   const allIds = bank.allTopics.flatMap(t => t.questions.map(q => q.id));
@@ -106,18 +93,13 @@ test('single-question practice can reach every standalone surprise question, nev
     seen.add(q.id);
   }
   for (const topic of bank.surpriseTopics) {
-    // 출제 유형 기반 보강 문항은 서베이 쪽과 마찬가지로 1문제 랜덤 연습에서 빠진다.
-    for (const q of providedQuestions(topic)) assert.equal(seen.has(q.id), !q.dependsOn?.length);
-    for (const q of adaptedQuestions(topic)) assert.equal(seen.has(q.id), false);
+    for (const q of topic.questions) assert.equal(seen.has(q.id), !q.dependsOn?.length);
   }
 });
 
 test('every surprise MP3 matches current text and voice settings and contains MPEG audio', () => {
   for (const topic of bank.surpriseTopics) {
-    // 자료 문항은 반드시 녹음이 있어야 하고, 보강 문항은 녹음이 있을 때만 맞는지 본다.
-    // 녹음이 없는 문항은 앱이 브라우저 낭독으로 읽는다.
     for (const q of topic.questions) {
-      if (q.source !== 'provided' && !manifest.questions[q.id]) continue;
       const seed = JSON.stringify([q.en.trim(), manifest.model, manifest.voice,
         /^gpt-/.test(manifest.model) ? null : manifest.speed,
         /^gpt-/.test(manifest.model) ? manifest.instructions : null]);

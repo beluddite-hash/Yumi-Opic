@@ -122,7 +122,8 @@ const ROLEPLAY_TYPES: QuestionType[] = ["roleplay_ask", "roleplay_problem", "rol
 /**
  * 실전 모의고사의 다섯 구간. 실제 시험처럼 세 구간은 배경 설문에서, 두 구간은 돌발에서 뽑고
  * 어느 구간이 돌발이 될지는 회차마다 무작위로 정한다. 롤플레이는 돌발 뱅크에 문항이 없어
- * 항상 배경 설문에서 나온다.
+ * 항상 배경 설문에서 나온다. types 는 배경 설문 구간의 번호별 유형이며, 돌발이 들어가는
+ * 일반 구간은 자료 순서를 따르므로 이 유형을 지키지 않는다.
  */
 const FULL_EXAM_GROUPS = [
   { slot: 2, label: "세트 1", types: GENERAL_TYPES[0], surveyOnly: false },
@@ -149,20 +150,27 @@ function coherentSet(questions: readonly Question[]): boolean {
 /** Resolve declared sets intact. Legacy banks enumerate complete eligible bundles before any draw. */
 export function completeQuestionSets(topic: Topic, types?: readonly QuestionType[]): Question[][] {
   let sets: Question[][];
+  let enforced = types;
   if (topic.fixedPracticeSets) {
     sets = topic.fixedPracticeSets.map(group => group.items.map(({ questionId }) => {
       const question = topic.questions.find(q => q.id === questionId);
       if (!question) throw new Error(`${topic.id}: missing set question ${questionId}`);
       return question;
     }));
-  } else if (topic.category === "surprise" && types?.length) {
-    // 돌발도 번호별 유형을 그대로 지킨다. 요청한 유형 순서대로 묶는다.
+  } else if (topic.category === "surprise" && types?.length && types.every(type => ADVANCED_TYPES.includes(type))) {
+    // 비교·이슈 구간만 유형 순서를 지킨다. 두 유형을 모두 가진 돌발 주제만 여기에 들어간다.
     sets = types.reduce<Question[][]>((built, type) => built.flatMap(set =>
       topic.questions.filter(q => q.type === type && !set.some(earlier => earlier.id === q.id)).map(q => [...set, q])), [[]]);
   } else if (topic.category === "surprise") {
-    // 유형을 지정하지 않으면 제공 자료의 흐름을 쓴다. 첫 문항으로 시작해 자료 순서를 지키고 비교·이슈는 뺀다.
-    const [first, ...rest] = topic.questions.filter(q => q.source === "provided" && !ADVANCED_TYPES.includes(q.type));
+    /*
+     * 돌발은 주제마다 가진 유형이 제각각이라 번호별 유형을 강요하지 않는다. 자료의 첫
+     * 문항으로 시작하고 나머지 둘은 자료 순서를 지켜 무작위로 고른다. 1·2·3 뿐 아니라
+     * 1·3·4, 1·3·5도 나온다. 비교·이슈는 어드밴스 구간 몫이라 여기서 뺀다.
+     */
+    const [first, ...rest] = topic.questions.filter(q => !ADVANCED_TYPES.includes(q.type));
     sets = first ? rest.flatMap((second, i) => rest.slice(i + 1).map(third => [first, second, third])) : [];
+    // 자료 순서 세트는 번호별 유형과 무관하므로 요청 유형으로 거르지 않는다.
+    enforced = undefined;
   } else {
     sets = [[]];
     for (const type of types ?? []) {
@@ -171,8 +179,8 @@ export function completeQuestionSets(topic: Topic, types?: readonly QuestionType
       sets = sets.flatMap(set => (verified.length ? verified : typed).map(q => [...set, q]));
     }
   }
-  return sets.filter(set => set.length > 0 && coherentSet(set) && (!types ||
-    (set.length === types.length && set.every((q, i) => q.type === types[i]))));
+  return sets.filter(set => set.length > 0 && coherentSet(set) && (!enforced ||
+    (set.length === enforced.length && set.every((q, i) => q.type === enforced[i]))));
 }
 
 interface GroupCandidate { topic: Topic; sets: Question[][] }

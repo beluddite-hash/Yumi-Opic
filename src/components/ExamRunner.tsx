@@ -698,7 +698,7 @@ export default function ExamRunner({
               </div>}
 
               {isPractice && (
-                <p className="mt-4 text-xs leading-relaxed text-exam-ink-muted">{fixedPracticeSets ? `${fixedPracticeSets.map((set) => set.label).join(" / ")} 순서입니다. 좁은 화면에서는 각 줄의 문항 번호를 가로로 스크롤할 수 있습니다.` : isSurprisePractice ? "제공 자료 문항을 자료 번호와 순서대로 먼저 연습하고, 유형을 채운 출제 유형 기반 문항이 뒤에 이어집니다. 번호는 실제 시험 번호가 아닙니다." : "2~15번은 선택한 주제의 문제입니다."} 이전·다음이나 번호로 이동하고, 원하는 문항만 답변한 뒤 결과를 볼 수 있습니다.</p>
+                <p className="mt-4 text-xs leading-relaxed text-exam-ink-muted">{fixedPracticeSets ? `${fixedPracticeSets.map((set) => set.label).join(" / ")} 순서입니다. 좁은 화면에서는 각 줄의 문항 번호를 가로로 스크롤할 수 있습니다.` : isSurprisePractice ? "제공 자료의 번호와 순서대로 연습합니다. 번호는 실제 시험 번호가 아닌 자료의 문항 번호입니다." : "2~15번은 선택한 주제의 문제입니다."} 이전·다음이나 번호로 이동하고, 원하는 문항만 답변한 뒤 결과를 볼 수 있습니다.</p>
               )}
 
               {index === 0 && (

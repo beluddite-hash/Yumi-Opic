@@ -46,7 +46,7 @@ export default function TopicsView() {
       </button>)}
     </div>
     <p className="mt-4 text-sm leading-relaxed text-fg-muted">{category === "surprise"
-      ? `돌발 ${surpriseQuestionCount}문항을 주제마다 제공 자료 순서대로 먼저 연습하고, 자료에 없는 유형을 채운 출제 유형 기반 문항이 그 뒤에 붙습니다. 5-A·5-B도 각각 선택할 수 있습니다. 원하는 번호로 이동해 답변할 수 있습니다.`
+      ? `돌발 ${surpriseQuestionCount}문항을 제공 자료의 번호와 순서대로 연습합니다. 5-A·5-B도 각각 선택할 수 있습니다. 질문은 MP3로 들을 수 있으며, 원하는 번호로 이동해 답변할 수 있습니다.`
       : "선택한 주제의 문제를 2~15번에 유형별로 배정하며 같은 질문이 중복될 수 있습니다. 집에서 보내는 휴가는 지정된 11문항을 순서대로 연습합니다. 원하는 문항만 답변하고 나머지는 건너뛰어도 됩니다."}</p>
     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
       <span>{RANDOM_SCOPE_LABELS[category]} 주제에서 랜덤으로{category === "survey" && ` (${excludedNames} 제외)`}</span>

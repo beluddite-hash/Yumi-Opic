@@ -134,30 +134,6 @@ export const surpriseTopics: Topic[] = [
         "dependsOn": [
           "industry-q4"
         ]
-      },
-      {
-        "id": "industry-r1",
-        "title": "Keeping Up with Industry News",
-        "type": "routine",
-        "source": "adapted",
-        "en": "What kinds of things do you do to keep up with the industry you are interested in? Do you read the news, watch videos, or talk about it with other people? Tell me exactly what you do from beginning to end.",
-        "ko": "관심 있는 산업의 소식을 챙기려고 어떤 일들을 하나요? 뉴스를 읽나요, 영상을 보나요, 아니면 다른 사람들과 이야기하나요? 처음부터 끝까지 무엇을 하는지 정확히 말해 주세요."
-      },
-      {
-        "id": "industry-e1",
-        "title": "Becoming Interested in an Industry",
-        "type": "experience",
-        "source": "adapted",
-        "en": "Talk about a time when you first became interested in a particular industry. When was it, and what made you start paying attention to it? What did you do to learn more about it? Tell me about the experience in detail.",
-        "ko": "특정 산업에 처음 관심을 갖게 된 때를 이야기해 주세요. 언제였고 무엇 때문에 눈여겨보게 됐나요? 더 알아보려고 무엇을 했나요? 그 경험을 자세히 말해 주세요."
-      },
-      {
-        "id": "industry-m1",
-        "title": "The Most Memorable Industry News",
-        "type": "memorable",
-        "source": "adapted",
-        "en": "Big news about an industry can catch people by surprise. Tell me about the most memorable piece of industry news you have ever heard. Start by telling me when it happened and how you first heard about it. Then tell me everything that happened and why it was so memorable.",
-        "ko": "산업에 관한 큰 소식은 사람들을 놀라게 하기도 합니다. 지금까지 들은 산업 소식 중 가장 기억에 남는 것을 말해 주세요. 언제 있었던 일이고 어떻게 처음 알게 됐는지부터 말한 뒤, 무슨 일이 있었고 왜 그렇게 기억에 남는지 모두 이야기해 주세요."
       }
     ]
   },
@@ -212,22 +188,6 @@ export const surpriseTopics: Topic[] = [
         "source": "provided",
         "en": "What is an industry or a company that people in your country are talking about nowadays? Tell me why people are interested in this industry and what they are saying about it.",
         "ko": "요즘 당신의 나라에서 사람들이 이야기하는 산업이나 회사는 무엇인가요? 왜 관심을 갖고 있으며 어떤 이야기를 하는지 말해 주세요."
-      },
-      {
-        "id": "job-hunting-e1",
-        "title": "Preparing for an Application or Interview",
-        "type": "experience",
-        "source": "adapted",
-        "en": "Talk about a time when you or someone you know prepared for a job application or an interview. What was the job, and what did the person have to get ready? What happened on the day of the interview? Tell me about the experience in detail.",
-        "ko": "당신이나 아는 사람이 입사 지원이나 면접을 준비했던 때를 이야기해 주세요. 어떤 일자리였고 무엇을 준비해야 했나요? 면접 당일에는 무슨 일이 있었나요? 그 경험을 자세히 말해 주세요."
-      },
-      {
-        "id": "job-hunting-m1",
-        "title": "A Memorable Moment While Job Hunting",
-        "type": "memorable",
-        "source": "adapted",
-        "en": "Unexpected things often happen while people are looking for a job. Tell me about one memorable experience someone had while job hunting. Start by telling me when it happened and who was involved. Then tell me exactly what happened and how it turned out in the end.",
-        "ko": "일자리를 구하다 보면 예상 밖의 일이 생기곤 합니다. 구직 중에 겪은 기억에 남는 일을 하나 말해 주세요. 언제 있었던 일이고 누가 관련됐는지부터 말한 뒤, 정확히 무슨 일이 있었고 결국 어떻게 됐는지 이야기해 주세요."
       }
     ]
   },
@@ -291,22 +251,6 @@ export const surpriseTopics: Topic[] = [
         "source": "provided",
         "en": "There have been changes in professions due to the development of technology. What are some recent professional trends in your country? Please describe them in detail.",
         "ko": "기술의 발달로 직업에도 변화가 생겼습니다. 당신의 나라에서 나타나는 최근 직업 동향에는 무엇이 있나요? 자세히 설명해 주세요."
-      },
-      {
-        "id": "workplaces-r1",
-        "title": "A Typical Workday",
-        "type": "routine",
-        "source": "adapted",
-        "en": "Think about a job you know well. What kinds of things does that person do on a typical workday? Tell me exactly what happens from the moment they arrive at work until they leave.",
-        "ko": "잘 아는 직업 하나를 떠올려 보세요. 그 사람은 보통 근무일에 어떤 일들을 하나요? 출근하는 순간부터 퇴근할 때까지 무슨 일이 일어나는지 정확히 말해 주세요."
-      },
-      {
-        "id": "workplaces-e1",
-        "title": "Starting a New Job",
-        "type": "experience",
-        "source": "adapted",
-        "en": "Talk about a time when you or someone you know started a new job or moved to a different workplace. When did it happen, and why did the person make the change? What was the new workplace like on the first day? Tell me about it in detail.",
-        "ko": "당신이나 아는 사람이 새 일을 시작하거나 다른 직장으로 옮겼던 때를 이야기해 주세요. 언제였고 왜 옮겼나요? 첫날 새 직장은 어땠나요? 자세히 말해 주세요."
       }
     ]
   },
@@ -352,22 +296,6 @@ export const surpriseTopics: Topic[] = [
         "source": "provided",
         "en": "Many kinds of unexpected things can happen when you are at a doctor's or dentist's office. Tell me about one experience you had that was unforgettable. Start by telling me when this happened, where you were, and who you were with. Then, tell me about all the things that happened that made this experience so unforgettable.",
         "ko": "병원이나 치과에서는 여러 예상 밖의 일이 일어날 수 있습니다. 잊을 수 없는 경험 한 가지를 말해 주세요. 언제, 어디서, 누구와 있었는지 먼저 말하고, 그 경험을 잊을 수 없게 만든 일들을 모두 설명해 주세요."
-      },
-      {
-        "id": "doctors-c1",
-        "title": "Hospitals Then and Now",
-        "type": "comparison",
-        "source": "adapted",
-        "en": "Doctors' and dentists' offices have changed over the years. Describe what they were like when you were a child. What did the offices look like, what kind of equipment did they have, and how were patients treated? Tell me how all of this has changed since then.",
-        "ko": "병원과 치과는 시간이 지나며 달라졌습니다. 어릴 때는 어땠는지 설명해 주세요. 병원은 어떻게 생겼고 어떤 장비가 있었으며 환자를 어떻게 대했나요? 그때와 지금이 어떻게 달라졌는지 말해 주세요."
-      },
-      {
-        "id": "doctors-i1",
-        "title": "Problems People Talk About at Hospitals",
-        "type": "issue",
-        "source": "adapted",
-        "en": "Stories about hospitals and health care are often in the news. Tell me about one news story you heard related to hospitals, doctors, or health care in your country. Describe what the story was about and what the reaction to the story was.",
-        "ko": "병원과 의료에 관한 이야기는 뉴스에 자주 나옵니다. 당신의 나라에서 병원, 의사, 의료와 관련해 들은 뉴스 하나를 말해 주세요. 어떤 내용이었고 사람들이 어떻게 반응했는지 설명해 주세요."
       }
     ]
   },
@@ -413,22 +341,6 @@ export const surpriseTopics: Topic[] = [
         "source": "provided",
         "en": "Unexpected things can happen when you make an appointment. Talk about a memorable incident regarding an appointment. What exactly happened, and how did you deal with the situation?",
         "ko": "약속이나 예약을 잡다 보면 예상 밖의 일이 생길 수 있습니다. 약속과 관련해 기억에 남는 사건을 말해 주세요. 정확히 무슨 일이 있었고 어떻게 대처했나요?"
-      },
-      {
-        "id": "appointments-c1",
-        "title": "How Making Appointments Has Changed",
-        "type": "comparison",
-        "source": "adapted",
-        "en": "The way people make appointments has changed over the years. Tell me how people made appointments in the past. Did they call, or did they visit in person? How is that different from the way people make appointments today? Please tell me all about the changes.",
-        "ko": "약속을 잡는 방식은 시간이 지나며 달라졌습니다. 예전에는 사람들이 어떻게 약속을 잡았나요? 전화를 걸었나요, 직접 찾아갔나요? 요즘 방식과는 어떻게 다른가요? 달라진 점을 모두 말해 주세요."
-      },
-      {
-        "id": "appointments-i1",
-        "title": "Problems with Appointments and Reservations",
-        "type": "issue",
-        "source": "adapted",
-        "en": "There have been changes in the way businesses handle appointments and reservations because of new technology. What are some recent trends in your country? What do people say about booking apps, no-shows, or cancellation fees? Please describe them in detail.",
-        "ko": "새로운 기술 때문에 업체가 약속과 예약을 처리하는 방식이 달라졌습니다. 당신의 나라의 최근 흐름은 어떤가요? 예약 앱, 노쇼, 취소 수수료에 대해 사람들은 뭐라고 이야기하나요? 자세히 설명해 주세요."
       }
     ]
   },
@@ -474,30 +386,6 @@ export const surpriseTopics: Topic[] = [
         "source": "provided",
         "en": "Tell me about your hairstylist. How did you first meet your hairstylist? Did someone recommend him or her to you? What is he or she like? Describe him or her in as much detail as you can.",
         "ko": "담당 미용사에 대해 말해 주세요. 처음 어떻게 만났나요? 누군가 추천해 줬나요? 어떤 사람인지 최대한 자세히 설명해 주세요."
-      },
-      {
-        "id": "hair-salons-e1",
-        "title": "Your Last Visit to the Hair Salon",
-        "type": "experience",
-        "source": "adapted",
-        "en": "Talk about the last time you went to a hair salon. When was it, and what did you ask for? What did you do from the moment you walked in until you walked out? Tell me about the visit in detail.",
-        "ko": "가장 최근에 미용실에 갔던 때를 이야기해 주세요. 언제였고 무엇을 요청했나요? 들어간 순간부터 나올 때까지 무엇을 했나요? 그날 방문을 자세히 말해 주세요."
-      },
-      {
-        "id": "hair-salons-c1",
-        "title": "Comparing Two Hair Salons",
-        "type": "comparison",
-        "source": "adapted",
-        "en": "Hair salons have changed over the years. Describe what the salons you went to as a child were like. What did they look like, what services did they offer, and how much did they cost? Tell me how salons are different today.",
-        "ko": "미용실은 시간이 지나며 달라졌습니다. 어릴 때 다니던 미용실은 어땠는지 설명해 주세요. 어떻게 생겼고 어떤 서비스가 있었으며 가격은 얼마였나요? 요즘 미용실은 어떻게 다른지 말해 주세요."
-      },
-      {
-        "id": "hair-salons-i1",
-        "title": "What People Complain About at Hair Salons",
-        "type": "issue",
-        "source": "adapted",
-        "en": "People often talk about their experiences at hair salons. Tell me about one story you heard about a hair salon. Perhaps it was about prices, long waiting times, or a haircut that did not turn out the way the customer wanted. Describe what the story was about and what the reaction to the story was.",
-        "ko": "사람들은 미용실에서 겪은 일을 자주 이야기합니다. 미용실에 대해 들은 이야기 하나를 말해 주세요. 가격이나 긴 대기 시간, 손님이 원한 대로 나오지 않은 머리에 관한 것일 수 있습니다. 어떤 이야기였고 사람들이 어떻게 반응했는지 설명해 주세요."
       }
     ]
   }

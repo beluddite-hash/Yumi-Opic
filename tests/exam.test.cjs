@@ -98,15 +98,26 @@ test('full exam draws three survey sets and two surprise sets, placing the surpr
     placements.add(surprise.map((group) => group.slots[0]).join('-'));
 
     for (const group of groups) {
-      // 돌발이든 배경 설문이든 구간의 번호별 유형을 그대로 따른다.
-      assert.deepEqual(group.items.map((i) => i.question.type), group.types);
       const topic = surpriseById.get(group.items[0].topicId);
       if (!topic) {
+        // 배경 설문 구간은 번호별 유형을 그대로 따르고, 선언된 고정 세트가 있으면 그대로 쓴다.
+        assert.deepEqual(group.items.map((i) => i.question.type), group.types);
         const surveyTopic = bank.surveyTopicById.get(group.items[0].topicId);
         if (surveyTopic.fixedPracticeSets) {
           assert.ok(surveyTopic.fixedPracticeSets.some((set) =>
             JSON.stringify(set.items.map((i) => i.questionId)) === JSON.stringify(ids(group.items))));
         }
+      } else if (group.types.includes('comparison')) {
+        // 돌발 어드밴스 구간만 비교 → 이슈 순서를 지킨다.
+        assert.deepEqual(group.items.map((i) => i.question.type), group.types);
+      } else {
+        // 돌발 일반 구간은 자료의 첫 문항으로 시작해 자료 순서대로, 비교·이슈를 빼고 낸다.
+        // 유형은 주제가 가진 자료를 따르므로 구간의 번호별 유형과 다를 수 있다.
+        assert.equal(group.items[0].question.id, topic.questions[0].id);
+        const order = group.items.map((i) => topic.questions.findIndex((q) => q.id === i.question.id));
+        assert.deepEqual(order, [...order].sort((a, b) => a - b));
+        assert.equal(new Set(order).size, order.length);
+        assert.ok(group.items.every((i) => !['comparison', 'issue'].includes(i.question.type)));
       }
       for (const [index, entry] of group.items.entries()) {
         if (topic) assert.doesNotMatch(entry.typeLabel, /번/);
@@ -162,18 +173,35 @@ test('every surprise topic can fill a general set, only comparison-issue topics 
   const surpriseById = new Map(data.surpriseTopics.map((t) => [t.id, t]));
   const general = new Set();
   const advanced = new Set();
+  const drawnSets = new Map();
   for (let seed = 0; seed < 1500; seed++) {
     const exam = engine.buildFullExam({ rng: seeded(seed) });
     for (const group of FULL_EXAM_GROUPS) {
       const items = groupItems(exam, group);
       if (!surpriseById.has(items[0].topicId)) continue;
       (group.types.includes('comparison') ? advanced : general).add(items[0].topicId);
+      if (!group.types.includes('comparison')) {
+        const drawn = drawnSets.get(items[0].topicId) ?? new Set();
+        drawn.add(items.map((i) => i.question.number).join('·'));
+        drawnSets.set(items[0].topicId, drawn);
+      }
       assert.deepEqual(items.map((i) => engine.itemNumber(exam.mode, i)), group.slots.map(String));
     }
   }
-  // 문항을 보강해 돌발 7개 주제가 일반 구간과 어드밴스 구간을 모두 채운다.
+  // 일반 구간은 돌발 7개 주제가 모두 채우고, 어드밴스 구간은 비교와 이슈를 함께 가진 주제만 채운다.
   assert.deepEqual([...general].sort(), data.surpriseTopics.map((t) => t.id).sort());
-  assert.deepEqual([...advanced].sort(), data.surpriseTopics.map((t) => t.id).sort());
+  assert.deepEqual([...advanced].sort(), data.surpriseTopics
+    .filter((t) => t.questions.some((q) => q.type === 'comparison') && t.questions.some((q) => q.type === 'issue'))
+    .map((t) => t.id).sort());
+
+  // 1번은 늘 나오지만 나머지 두 문항은 자료 순서를 지키며 조합이 달라진다.
+  for (const [topicId, drawn] of drawnSets) {
+    const topic = surpriseById.get(topicId);
+    const expected = engine.completeQuestionSets(topic).map((set) => set.map((q) => q.number).join('·'));
+    assert.deepEqual([...drawn].sort(), [...expected].sort(), topicId);
+    assert.ok([...drawn].every((set) => set.startsWith(`${topic.questions[0].number}·`)), topicId);
+  }
+  assert.ok([...drawnSets.values()].some((drawn) => drawn.size > 1), '자료가 허용하면 조합이 하나로 굳지 않는다');
 
   const practice = engine.buildPracticeExam(data.topicById.get('recycling'));
   assert.deepEqual(practice.items.map((i) => engine.itemNumber(practice.mode, i)), ['1', '2', '3', '4', '5-A', '5-B', '6']);
