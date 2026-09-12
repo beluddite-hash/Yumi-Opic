@@ -1,0 +1,554 @@
+{
+  "beach": [
+    {
+      "label": "COMBO 1",
+      "key": "set1",
+      "questions": [
+        {
+          "displayNumber": "2",
+          "en": "You indicated in the survey that you go to the beach. Tell me about a beach that you like to go to. What does this place look like?",
+          "slot": 1,
+          "id": "beach-set1-q2",
+          "ko": "설문에서 해변에 간다고 하셨습니다. 즐겨 가는 해변을 말해 주세요. 그곳은 어떻게 생겼나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "3",
+          "en": "What kinds of things do you like to do when you go to the beach? Tell me about the activities you typically do there when you go to the beach.",
+          "slot": 2,
+          "id": "beach-set1-q3",
+          "ko": "해변에 가면 어떤 일을 좋아하나요? 해변에 갈 때 보통 하는 활동을 말해 주세요.",
+          "type": "routine"
+        },
+        {
+          "displayNumber": "4",
+          "en": "Tell me about a particularly memorable or beautiful beach that you have visited. What did this place look like? What was your impression of that place? Tell me in detail about what this special place looked like.",
+          "slot": 3,
+          "id": "beach-set1-q4",
+          "ko": "방문했던 해변 중 특히 기억에 남거나 아름다웠던 곳을 말해 주세요. 어떻게 생겼나요? 어떤 인상을 받았나요? 그 특별한 곳의 모습을 자세히 설명해 주세요.",
+          "type": "experience"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 2",
+      "key": "set2",
+      "questions": [
+        {
+          "displayNumber": "2",
+          "en": "You indicated in the survey that you go to the beach. Tell me about a beach that you like to go to. What does this place look like?",
+          "slot": 4,
+          "id": "beach-set2-q2",
+          "ko": "설문에서 해변에 간다고 하셨습니다. 즐겨 가는 해변을 말해 주세요. 그곳은 어떻게 생겼나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "3",
+          "en": "What kinds of things do you like to do when you go to the beach? Tell me about the activities you typically do there when you go to the beach.",
+          "slot": 5,
+          "id": "beach-set2-q3",
+          "ko": "해변에 가면 어떤 일을 좋아하나요? 해변에 갈 때 보통 하는 활동을 말해 주세요.",
+          "type": "routine"
+        },
+        {
+          "displayNumber": "4",
+          "en": "Tell me about the beach that you went to recently. What did it look like? What did you like about that beach? Describe it in detail.",
+          "slot": 6,
+          "id": "beach-set2-q4",
+          "ko": "최근에 갔던 해변을 말해 주세요. 어떻게 생겼나요? 어떤 점이 좋았나요? 자세히 설명해 주세요.",
+          "type": "experience"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 3",
+      "key": "set3",
+      "questions": [
+        {
+          "displayNumber": "5",
+          "en": "You indicated in the survey that you go to the beach. Tell me about a beach that you like to go to. What does this place look like?",
+          "slot": 7,
+          "id": "beach-set3-q5",
+          "ko": "설문에서 해변에 간다고 하셨습니다. 즐겨 가는 해변을 말해 주세요. 그곳은 어떻게 생겼나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "6",
+          "en": "Tell me about the beach that you went to recently. What did it look like? What did you like about that beach? Describe it in detail.",
+          "slot": 8,
+          "id": "beach-set3-q6",
+          "ko": "최근에 갔던 해변을 말해 주세요. 어떻게 생겼나요? 어떤 점이 좋았나요? 자세히 설명해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "7",
+          "en": "Tell me about a particularly memorable trip to the beach. Who were you with? Which beach were you at? What did you do there? What made this trip to the beach more memorable or special? Tell me everything you did from the moment you arrived there.",
+          "slot": 9,
+          "id": "beach-set3-q7",
+          "ko": "특히 기억에 남는 해변 여행을 말해 주세요. 누구와 함께였고 어느 해변이었나요? 무엇을 했나요? 무엇 때문에 더 기억에 남거나 특별했나요? 도착한 순간부터 했던 모든 일을 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 4",
+      "key": "set4",
+      "questions": [
+        {
+          "displayNumber": "5",
+          "en": "You indicated in the survey that you go to the beach. Tell me about a beach that you like to go to. What does this place look like?",
+          "slot": 10,
+          "id": "beach-set4-q5",
+          "ko": "설문에서 해변에 간다고 하셨습니다. 즐겨 가는 해변을 말해 주세요. 그곳은 어떻게 생겼나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "6",
+          "en": "Tell me about a particularly memorable or beautiful beach that you have visited. What did this place look like? What was your impression of that place? Tell me in detail about what this special place looked like. ",
+          "slot": 11,
+          "id": "beach-set4-q6",
+          "ko": "방문했던 해변 중 특히 기억에 남거나 아름다웠던 곳을 말해 주세요. 어떻게 생겼나요? 어떤 인상을 받았나요? 그 특별한 곳의 모습을 자세히 설명해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "7",
+          "en": "Tell me about a particularly memorable trip to the beach. Who were you with? Which beach were you at? What did you do there? What made this trip to the beach more memorable or special? Tell me everything you did from the moment you arrived there.",
+          "slot": 12,
+          "id": "beach-set4-q7",
+          "ko": "특히 기억에 남는 해변 여행을 말해 주세요. 누구와 함께였고 어느 해변이었나요? 무엇을 했나요? 무엇 때문에 더 기억에 남거나 특별했나요? 도착한 순간부터 했던 모든 일을 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 5",
+      "key": "set5",
+      "questions": [
+        {
+          "displayNumber": "8",
+          "en": "You indicated in the survey that you go to the beach. Tell me about a beach that you like to go to. What does this place look like?",
+          "slot": 13,
+          "id": "beach-set5-q8",
+          "ko": "설문에서 해변에 간다고 하셨습니다. 즐겨 가는 해변을 말해 주세요. 그곳은 어떻게 생겼나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "9",
+          "en": "Tell me about the beach that you went to recently. What did it look like? What did you like about that beach? Describe it in detail.",
+          "slot": 14,
+          "id": "beach-set5-q9",
+          "ko": "최근에 갔던 해변을 말해 주세요. 어떻게 생겼나요? 어떤 점이 좋았나요? 자세히 설명해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "10",
+          "en": "Tell me about a particularly memorable trip to the beach. Who were you with? Which beach were you at? What did you do there? What made this trip to the beach more memorable or special? Tell me everything you did from the moment you arrived there.",
+          "slot": 15,
+          "id": "beach-set5-q10",
+          "ko": "특히 기억에 남는 해변 여행을 말해 주세요. 누구와 함께였고 어느 해변이었나요? 무엇을 했나요? 무엇 때문에 더 기억에 남거나 특별했나요? 도착한 순간부터 했던 모든 일을 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 6",
+      "key": "set6",
+      "questions": [
+        {
+          "displayNumber": "8",
+          "en": "You indicated in the survey that you go to the beach. Tell me about a beach that you like to go to. What does this place look like?",
+          "slot": 16,
+          "id": "beach-set6-q8",
+          "ko": "설문에서 해변에 간다고 하셨습니다. 즐겨 가는 해변을 말해 주세요. 그곳은 어떻게 생겼나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "9",
+          "en": "Tell me about a particularly memorable or beautiful beach that you have visited. What did this place look like? What was your impression of that place? Tell me in detail about what this special place looked like. ",
+          "slot": 17,
+          "id": "beach-set6-q9",
+          "ko": "방문했던 해변 중 특히 기억에 남거나 아름다웠던 곳을 말해 주세요. 어떻게 생겼나요? 어떤 인상을 받았나요? 그 특별한 곳의 모습을 자세히 설명해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "10",
+          "en": "Tell me about a particularly memorable trip to the beach. Who were you with? Which beach were you at? What did you do there? What made this trip to the beach more memorable or special? Tell me everything you did from the moment you arrived there.",
+          "slot": 18,
+          "id": "beach-set6-q10",
+          "ko": "특히 기억에 남는 해변 여행을 말해 주세요. 누구와 함께였고 어느 해변이었나요? 무엇을 했나요? 무엇 때문에 더 기억에 남거나 특별했나요? 도착한 순간부터 했던 모든 일을 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "ROLE-PLAY COMBO",
+      "key": "roleplay1",
+      "questions": [
+        {
+          "displayNumber": "11",
+          "en": "I'll give you a situation and ask you to act it out. Imagine that you want to go to a beach. Invite your friend to a beach and ask several questions to set the time and place to go there with him or her.",
+          "slot": 19,
+          "id": "beach-roleplay1-q11",
+          "ko": "상황을 드릴 테니 역할극을 해 주세요. 해변에 가고 싶다고 상상해 보세요. 친구를 해변에 초대하고 함께 갈 시간과 장소를 정하기 위해 여러 가지 질문을 해 주세요.",
+          "type": "roleplay_ask"
+        },
+        {
+          "displayNumber": "12",
+          "en": "I'm sorry, but there is a problem that I need you to resolve. On the day of your beach trip, the weather is terrible. Call your friend, explain the situation, and make plans to go to the beach next time.",
+          "slot": 20,
+          "id": "beach-roleplay1-q12",
+          "ko": "죄송하지만 해결해 주셔야 할 문제가 있습니다. 해변 여행 당일 날씨가 매우 나쁩니다. 친구에게 전화해서 상황을 설명하고 다음에 해변에 갈 계획을 세워 주세요.",
+          "type": "roleplay_problem"
+        },
+        {
+          "displayNumber": "13",
+          "en": "That's the end of the situation. Was there a time when you couldn't go on a trip to the beach because of the bad weather? What was the weather like and how did you deal with the situation?",
+          "slot": 21,
+          "id": "beach-roleplay1-q13",
+          "ko": "상황극은 여기까지입니다. 나쁜 날씨 때문에 해변 여행을 가지 못했던 적이 있나요? 날씨가 어땠고 상황에 어떻게 대처했나요?",
+          "type": "roleplay_experience"
+        }
+      ]
+    },
+    {
+      "label": "ADVANCED COMBO",
+      "key": "advanced1",
+      "questions": [
+        {
+          "displayNumber": "14",
+          "en": "You indicated in the survey that you enjoy going to beaches. Pick two different beaches that you've ever been to. What does each of the beaches look like? Talk about their similarities and differences, and explain which one you prefer and why. ",
+          "slot": 22,
+          "id": "beach-advanced1-q14",
+          "ko": "설문에서 해변에 가는 것을 즐긴다고 하셨습니다. 가 본 서로 다른 해변 두 곳을 고르세요. 각각 어떻게 생겼나요? 공통점과 차이점을 말하고 어느 곳을 더 좋아하는지, 그 이유를 설명해 주세요.",
+          "type": "comparison"
+        },
+        {
+          "displayNumber": "15",
+          "en": "What are some issues or concerns people have about beaches? What has caused these problems? What should be done to protect beaches and address these issues?",
+          "slot": 23,
+          "id": "beach-advanced1-q15",
+          "ko": "사람들이 해변에 대해 갖는 문제나 우려에는 무엇이 있나요? 무엇이 이러한 문제를 일으켰나요? 해변을 보호하고 문제를 해결하기 위해 무엇을 해야 하나요?",
+          "type": "issue"
+        }
+      ]
+    }
+  ],
+  "overseas": [
+    {
+      "label": "COMBO 1",
+      "key": "set1",
+      "questions": [
+        {
+          "displayNumber": "2",
+          "en": "You indicated in the survey that you take vacations internationally. Could you describe for me one of the countries you have visited? What did it look like and what were the local people like there?",
+          "slot": 1,
+          "id": "overseas-set1-q2",
+          "ko": "설문에서 해외로 휴가를 간다고 하셨습니다. 방문한 나라 중 한 곳을 설명해 주시겠어요? 어떤 모습이었고 현지 사람들은 어땠나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "3",
+          "en": "Talk about the things that you typically do when you visit another country or overseas city.",
+          "slot": 2,
+          "id": "overseas-set1-q3",
+          "ko": "다른 나라나 해외 도시에 방문하면 보통 하는 일들을 말해 주세요.",
+          "type": "routine"
+        },
+        {
+          "displayNumber": "4",
+          "en": "Tell me about your first trip to another country or city. When did you go? Where did you visit? What did you do there? Who did you go with? Tell me everything about that trip with lots of details.",
+          "slot": 3,
+          "id": "overseas-set1-q4",
+          "ko": "다른 나라나 도시로 처음 여행했던 경험을 말해 주세요. 언제 갔고 어디를 방문했나요? 그곳에서 무엇을 했고 누구와 갔나요? 그 여행의 모든 것을 아주 자세히 말해 주세요.",
+          "type": "experience"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 2",
+      "key": "set2",
+      "questions": [
+        {
+          "displayNumber": "5",
+          "en": "You indicated in the survey that you take vacations internationally. Could you describe for me one of the countries you have visited? What did it look like and what were the local people like there?",
+          "slot": 4,
+          "id": "overseas-set2-q5",
+          "ko": "설문에서 해외로 휴가를 간다고 하셨습니다. 방문한 나라 중 한 곳을 설명해 주시겠어요? 어떤 모습이었고 현지 사람들은 어땠나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "6",
+          "en": "Tell me about your first trip to another country or city. When did you go? Where did you visit? What did you do there? Who did you go with? Tell me everything about that trip with lots of details.",
+          "slot": 5,
+          "id": "overseas-set2-q6",
+          "ko": "다른 나라나 도시로 처음 여행했던 경험을 말해 주세요. 언제 갔고 어디를 방문했나요? 그곳에서 무엇을 했고 누구와 갔나요? 그 여행의 모든 것을 아주 자세히 말해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "7",
+          "en": "Traveling can lead to many kinds of interesting, funny and unexpected experience. Tell me about one travel experience you had that was unforgettable. Start by telling me when this happened, where you were, and who you were with. And then, tell me about all the things that happened, which made this experience so memorable.",
+          "slot": 6,
+          "id": "overseas-set2-q7",
+          "ko": "여행에서는 흥미롭고 재미있으며 예상하지 못한 여러 경험을 할 수 있습니다. 잊을 수 없었던 여행 경험 하나를 말해 주세요. 언제였고 어디에 있었으며 누구와 함께였는지부터 말해 주세요. 그런 다음 그 경험을 기억에 남게 했던 모든 일을 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 3",
+      "key": "set3",
+      "questions": [
+        {
+          "displayNumber": "8",
+          "en": "You indicated in the survey that you take vacations internationally. Could you describe for me one of the countries you have visited? What did it look like and what were the local people like there?",
+          "slot": 7,
+          "id": "overseas-set3-q8",
+          "ko": "설문에서 해외로 휴가를 간다고 하셨습니다. 방문한 나라 중 한 곳을 설명해 주시겠어요? 어떤 모습이었고 현지 사람들은 어땠나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "9",
+          "en": "Tell me about your first trip to another country or city. When did you go? Where did you visit? What did you do there? Who did you go with? Tell me everything about that trip with lots of details.",
+          "slot": 8,
+          "id": "overseas-set3-q9",
+          "ko": "다른 나라나 도시로 처음 여행했던 경험을 말해 주세요. 언제 갔고 어디를 방문했나요? 그곳에서 무엇을 했고 누구와 갔나요? 그 여행의 모든 것을 아주 자세히 말해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "10",
+          "en": "Traveling can lead to many kinds of interesting, funny and unexpected experience. Tell me about one travel experience you had that was unforgettable. Start by telling me when this happened, where you were, and who you were with. And then, tell me about all the things that happened, which made this experience so memorable. ",
+          "slot": 9,
+          "id": "overseas-set3-q10",
+          "ko": "여행에서는 흥미롭고 재미있으며 예상하지 못한 여러 경험을 할 수 있습니다. 잊을 수 없었던 여행 경험 하나를 말해 주세요. 언제였고 어디에 있었으며 누구와 함께였는지부터 말해 주세요. 그런 다음 그 경험을 기억에 남게 했던 모든 일을 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "ROLE-PLAY COMBO 1",
+      "key": "roleplay1",
+      "questions": [
+        {
+          "displayNumber": "11",
+          "en": "I'd like to give you a situation and ask you to act it out. You are planning on going on a trip. Call a travel agency and ask three or four questions about the trip you want to go on.",
+          "slot": 10,
+          "id": "overseas-roleplay1-q11",
+          "ko": "상황을 드릴 테니 역할극을 해 주세요. 여행을 계획하고 있습니다. 여행사에 전화해서 가고 싶은 여행에 관한 질문을 서너 가지 해 주세요.",
+          "type": "roleplay_ask"
+        },
+        {
+          "displayNumber": "12",
+          "en": "I'm sorry, but there is a problem that I need you to resolve. When you arrive at the airport, you were told that your flight is canceled and other flights are completely booked. Call your travel agency, explain the situation, and make two or three suggestions to resolve the situation.",
+          "slot": 11,
+          "id": "overseas-roleplay1-q12",
+          "ko": "죄송하지만 해결해 주셔야 할 문제가 있습니다. 공항에 도착하니 항공편이 취소되었고 다른 항공편은 모두 예약이 찼다는 말을 들었습니다. 여행사에 전화해서 상황을 설명하고 해결을 위한 제안을 두세 가지 해 주세요.",
+          "type": "roleplay_problem"
+        },
+        {
+          "displayNumber": "13",
+          "en": "That's the end of the situation. Have you ever had to deal with problems caused by canceled flight tickets? Describe that experience in detail. Tell me when and where this took place and what exactly happened. Talk about that experience from beginning to end.",
+          "slot": 12,
+          "id": "overseas-roleplay1-q13",
+          "ko": "상황극은 여기까지입니다. 항공권 취소로 생긴 문제에 대처해야 했던 적이 있나요? 그 경험을 자세히 설명해 주세요. 언제 어디에서 있었고 정확히 무슨 일이 일어났는지 말해 주세요. 처음부터 끝까지 이야기해 주세요.",
+          "type": "roleplay_experience"
+        }
+      ]
+    },
+    {
+      "label": "ROLE-PLAY COMBO 2",
+      "key": "roleplay2",
+      "questions": [
+        {
+          "displayNumber": "11",
+          "en": "You are visiting New York on vacation. You go to a car rental agency to rent a car. Imagine you are speaking to a rental car agent and ask three or four questions about renting a car for a week.",
+          "slot": 13,
+          "id": "overseas-roleplay2-q11",
+          "ko": "휴가로 뉴욕에 방문했습니다. 차를 빌리기 위해 렌터카 회사에 갑니다. 직원과 대화한다고 상상하고 일주일 동안 차를 빌리는 것에 대해 질문을 서너 가지 해 주세요.",
+          "type": "roleplay_ask"
+        },
+        {
+          "displayNumber": "12",
+          "en": "I'm not sure if I can let you rent a car because I'm not familiar with your non-US driver's license. Can you explain to me what the license says and why it is the same as a valid US license?",
+          "slot": 14,
+          "id": "overseas-roleplay2-q12",
+          "ko": "미국 외 국가의 운전면허증을 잘 몰라서 차를 빌려드릴 수 있을지 모르겠습니다. 면허증에 무엇이 적혀 있고 왜 유효한 미국 면허증과 같은지 설명해 주시겠어요?",
+          "type": "roleplay_problem"
+        },
+        {
+          "displayNumber": "13",
+          "en": "That’s the end of the situation. Sometimes, something out of the ordinary happens while travelling. I wonder if you have ever experienced anything surprising, unexpected or unusual during a trip. Tell me about that experience. Start by telling when and where you were traveling, and then give me all the details of that experience.",
+          "slot": 15,
+          "id": "overseas-roleplay2-q13",
+          "ko": "상황극은 여기까지입니다. 여행 중에는 때때로 평소와 다른 일이 생깁니다. 여행 중 놀랍거나 예상하지 못했거나 특이한 일을 겪은 적이 있는지 궁금합니다. 그 경험을 말해 주세요. 언제 어디를 여행하고 있었는지부터 말하고, 그 경험의 모든 세부 사항을 설명해 주세요.",
+          "type": "roleplay_experience"
+        }
+      ]
+    },
+    {
+      "label": "ADVANCE COMBO",
+      "key": "advanced1",
+      "questions": [
+        {
+          "displayNumber": "14",
+          "en": "You indicated in the survey that you take vacations internationally. How has traveling to other countries changed over the years? Is it easier or more difficult? Describe what travelling was like in the past and what changes you have seen over the years.",
+          "slot": 16,
+          "id": "overseas-advanced1-q14",
+          "ko": "설문에서 해외로 휴가를 간다고 하셨습니다. 다른 나라로 여행하는 것이 세월이 흐르며 어떻게 달라졌나요? 더 쉬워졌나요, 어려워졌나요? 과거의 여행이 어땠는지와 그동안 보아 온 변화를 설명해 주세요.",
+          "type": "comparison"
+        },
+        {
+          "displayNumber": "15",
+          "en": "When people discuss traveling internationally, what kinds of things do they consider the most? Why are these things of such interest or importance to travelers? Tell me about the activities people want to try when traveling to other countries. Are there any places they want to go to or things they want to see?",
+          "slot": 17,
+          "id": "overseas-advanced1-q15",
+          "ko": "사람들이 해외여행을 이야기할 때 무엇을 가장 많이 고려하나요? 왜 여행자들에게 그렇게 흥미롭거나 중요한가요? 다른 나라를 여행할 때 사람들이 해 보고 싶어 하는 활동을 말해 주세요. 가고 싶은 장소나 보고 싶은 것이 있나요?",
+          "type": "issue"
+        }
+      ]
+    }
+  ],
+  "gym": [
+    {
+      "label": "COMBO 1",
+      "key": "set1",
+      "questions": [
+        {
+          "displayNumber": "2",
+          "en": "You indicated in the survey that you go to the gym. Tell me about the gym or health club you often go to. Where is it located? What does it look like? What types of things does the gym provide? ",
+          "slot": 1,
+          "id": "gym-set1-q2",
+          "ko": "설문에서 헬스장에 간다고 하셨습니다. 자주 가는 헬스장이나 헬스클럽을 말해 주세요. 어디에 있나요? 어떻게 생겼나요? 어떤 것들을 제공하나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "3",
+          "en": "Talk about your usual routine when you go to the gym. What do you typically do when you go there? When do you go and how do you prepare before and once you get there?",
+          "slot": 2,
+          "id": "gym-set1-q3",
+          "ko": "헬스장에 갈 때의 평소 일과를 말해 주세요. 그곳에서 보통 무엇을 하나요? 언제 가고, 가기 전과 도착한 뒤에는 어떻게 준비하나요?",
+          "type": "routine"
+        },
+        {
+          "displayNumber": "4",
+          "en": "How did you first become interested in working out? When did you first start going to the gym? Tell me about your first experience when you went to the gym in detail.",
+          "slot": 3,
+          "id": "gym-set1-q4",
+          "ko": "처음 운동에 관심을 갖게 된 계기는 무엇인가요? 언제 처음 헬스장에 다니기 시작했나요? 처음 헬스장에 갔던 경험을 자세히 말해 주세요.",
+          "type": "experience"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 2",
+      "key": "set2",
+      "questions": [
+        {
+          "displayNumber": "5",
+          "en": "You indicated in the survey that you go to the gym. Tell me about the gym or health club you often go to. Where is it located? What does it look like? What types of things does the gym provide? ",
+          "slot": 4,
+          "id": "gym-set2-q5",
+          "ko": "설문에서 헬스장에 간다고 하셨습니다. 자주 가는 헬스장이나 헬스클럽을 말해 주세요. 어디에 있나요? 어떻게 생겼나요? 어떤 것들을 제공하나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "6",
+          "en": "How did you first become interested in working out? When did you first start going to the gym? Tell me about your first experience when you went to the gym in detail.",
+          "slot": 5,
+          "id": "gym-set2-q6",
+          "ko": "처음 운동에 관심을 갖게 된 계기는 무엇인가요? 언제 처음 헬스장에 다니기 시작했나요? 처음 헬스장에 갔던 경험을 자세히 말해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "7",
+          "en": "Could you tell me about an unusual or unexpected experience you had at the gym? What happened? And why was this experience so memorable? Tell me the unexpected experience while working out with as many details as possible.",
+          "slot": 6,
+          "id": "gym-set2-q7",
+          "ko": "헬스장에서 겪은 특이하거나 예상하지 못했던 경험을 말해 주시겠어요? 무슨 일이 있었나요? 왜 그렇게 기억에 남았나요? 운동 중 겪었던 뜻밖의 경험을 최대한 자세히 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "COMBO 3",
+      "key": "set3",
+      "questions": [
+        {
+          "displayNumber": "8",
+          "en": "You indicated in the survey that you go to the gym. Tell me about the gym or health club you often go to. Where is it located? What does it look like? What types of things does the gym provide? ",
+          "slot": 7,
+          "id": "gym-set3-q8",
+          "ko": "설문에서 헬스장에 간다고 하셨습니다. 자주 가는 헬스장이나 헬스클럽을 말해 주세요. 어디에 있나요? 어떻게 생겼나요? 어떤 것들을 제공하나요?",
+          "type": "description"
+        },
+        {
+          "displayNumber": "9",
+          "en": "How did you first become interested in working out? When did you first start going to the gym? Tell me about your first experience when you went to the gym in detail.",
+          "slot": 8,
+          "id": "gym-set3-q9",
+          "ko": "처음 운동에 관심을 갖게 된 계기는 무엇인가요? 언제 처음 헬스장에 다니기 시작했나요? 처음 헬스장에 갔던 경험을 자세히 말해 주세요.",
+          "type": "experience"
+        },
+        {
+          "displayNumber": "10",
+          "en": "Could you tell me about an unusual or unexpected experience you had at the gym? What happened? And why was this experience so memorable? Tell me the unexpected experience while working out with as many details as possible.",
+          "slot": 9,
+          "id": "gym-set3-q10",
+          "ko": "헬스장에서 겪은 특이하거나 예상하지 못했던 경험을 말해 주시겠어요? 무슨 일이 있었나요? 왜 그렇게 기억에 남았나요? 운동 중 겪었던 뜻밖의 경험을 최대한 자세히 말해 주세요.",
+          "type": "memorable"
+        }
+      ]
+    },
+    {
+      "label": "ROLE-PLAY COMBO",
+      "key": "roleplay1",
+      "questions": [
+        {
+          "displayNumber": "11",
+          "en": "I'd like to give you a situation and ask you to act it out. You are interested in joining a new gym that has recently opened in your town. Call the gym and ask three or four questions to get some information about the gym.",
+          "slot": 10,
+          "id": "gym-roleplay1-q11",
+          "ko": "상황을 드릴 테니 역할극을 해 주세요. 동네에 최근 새로 문을 연 헬스장에 가입하고 싶습니다. 헬스장에 전화해서 정보를 얻기 위한 질문을 서너 가지 해 주세요.",
+          "type": "roleplay_ask"
+        },
+        {
+          "displayNumber": "12",
+          "en": "I'm sorry, but there is a problem that I need you to resolve. You were supposed to go to the gym with your friend today, but something unexpected came up and you can't make it. Call your friend, explain the situation, suggest two or three solutions, and make new plans to go to the gym together another day.",
+          "slot": 11,
+          "id": "gym-roleplay1-q12",
+          "ko": "죄송하지만 해결해 주셔야 할 문제가 있습니다. 오늘 친구와 헬스장에 가기로 했지만 뜻밖의 일이 생겨 갈 수 없습니다. 친구에게 전화해서 상황을 설명하고 두세 가지 해결책을 제안한 뒤 다른 날 함께 헬스장에 갈 새 계획을 세워 주세요.",
+          "type": "roleplay_problem"
+        },
+        {
+          "displayNumber": "13",
+          "en": "That’s the end of the situation. Have you ever made plans to do something with a friend but couldn’t make it because something unexpected happened? Tell me about the experience in detail. Explain what you had planned to do, what happened, why you couldn’t go, and how you handled the situation from beginning to end.",
+          "slot": 12,
+          "id": "gym-roleplay1-q13",
+          "ko": "상황극은 여기까지입니다. 친구와 무언가를 하기로 했지만 뜻밖의 일이 생겨 가지 못했던 적이 있나요? 그 경험을 자세히 말해 주세요. 무엇을 하기로 했고 무슨 일이 생겼으며 왜 가지 못했는지, 어떻게 대처했는지 처음부터 끝까지 설명해 주세요.",
+          "type": "roleplay_experience"
+        }
+      ]
+    },
+    {
+      "label": "ADVANCE COMBO",
+      "key": "advanced1",
+      "questions": [
+        {
+          "displayNumber": "14",
+          "en": "You indicated in the survey that you go to the gym or health club. Pick two gyms or health clubs that you know of, and tell me about their similarities and differences. Which one do you prefer and why?",
+          "slot": 13,
+          "id": "gym-advanced1-q14",
+          "ko": "설문에서 헬스장이나 헬스클럽에 간다고 하셨습니다. 알고 있는 두 곳을 고르고 공통점과 차이점을 말해 주세요. 어느 곳을 더 좋아하며 그 이유는 무엇인가요?",
+          "type": "comparison"
+        },
+        {
+          "displayNumber": "15",
+          "en": "I'd like to know about one of the challenges gyms or health clubs are faced with. What are they are faced with these days? Discuss what has caused these concerns. What kinds of steps need to be taken to address these issues?",
+          "slot": 14,
+          "id": "gym-advanced1-q15",
+          "ko": "헬스장이나 헬스클럽이 겪는 어려움 중 하나를 알고 싶습니다. 요즘 어떤 어려움에 직면해 있나요? 이러한 우려의 원인을 설명해 주세요. 이 문제들을 해결하기 위해 어떤 조치를 취해야 하나요?",
+          "type": "issue"
+        }
+      ]
+    }
+  ]
+}
