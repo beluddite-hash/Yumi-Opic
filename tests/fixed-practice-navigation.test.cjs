@@ -71,17 +71,17 @@ test('repeated display numbers select distinct indices and have independent acti
   assert.notEqual(first.props['aria-label'], second.props['aria-label']);
 });
 
-test('staycation retains its eleven numbers, active styling and navigation targets', () => {
+test('staycation retains its fourteen numbers, active styling and navigation targets', () => {
   const topic = surveyTopicById.get('staycation');
   const exam = buildPracticeExam(topic);
   const selected = [];
   const root = Navigation({ items: exam.items, sets: topic.fixedPracticeSets, currentSlot: 11, answers: {}, onSelect: i => selected.push(i) });
   const rows = children(root);
-  assert.deepEqual(buttons(rows[0]).map(b => b.props.children), ['2','3','4','5','6','7']);
+  assert.deepEqual(buttons(rows[0]).map(b => b.props.children), ['2','3','4','5','6','7','8','9','10']);
   assert.deepEqual(buttons(rows[1]).map(b => b.props.children), ['11','12','13','14','15']);
   const all = buttons(root);
   all.forEach(button => button.props.onClick());
-  assert.deepEqual(selected, Array.from({ length: 11 }, (_, i) => i));
+  assert.deepEqual(selected, Array.from({ length: 14 }, (_, i) => i));
   assert.equal(all.filter(b => b.props['aria-current'] === 'step').length, 1);
-  assert.match(all[6].props.className, /border-exam-slot-active bg-exam-slot-active text-exam-slot-active-fg/);
+  assert.match(all[9].props.className, /border-exam-slot-active bg-exam-slot-active text-exam-slot-active-fg/);
 });

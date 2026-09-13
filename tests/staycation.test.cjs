@@ -30,6 +30,18 @@ const expected = [
     "Could you tell me about an unusual or unexpected experience you had during a vacation you had at home? What happened? Who was involved? And why was this experience so memorable?"
   ],
   [
+    8,
+    "You indicated that you take vacations at home. Who are the people you would like to see and spend time with on your vacation?"
+  ],
+  [
+    9,
+    "Describe exactly what you did during the last vacation that you spent at home. Give me a description of what you did from the first to the last day. Talk about all the people you saw and everything that you did."
+  ],
+  [
+    10,
+    "Could you tell me about an unusual or unexpected experience you had during a vacation you had at home? What happened? Who was involved? And why was this experience so memorable?"
+  ],
+  [
     11,
     "I'd like to give you a situation and ask you to act it out. You want to get two tickets to see a performance during your vacation. Call the box office and ask three or four questions to get tickets."
   ],
@@ -54,11 +66,11 @@ const expected = [
 test('staycation preserves the supplied wording, fixed slots and combo boundaries without random draws', () => {
   const topic = surveyTopicById.get('staycation');
   const exam = buildPracticeExam(topic, () => { throw new Error('Fixed practice must not draw randomly'); });
-  assert.equal(topic.questions.length, 11);
+  assert.equal(topic.questions.length, 14);
   assert.deepEqual(exam.items.map(({ slot, question }) => [slot, question.en]), expected);
   assert.deepEqual(exam.items.map((item) => item.comboLabel), [
     'Q2–Q4', 'Q2–Q4', 'Q2–Q4', 'Q5–Q7', 'Q5–Q7', 'Q5–Q7',
-    'Q11–Q13', 'Q11–Q13', 'Q11–Q13', 'Q14–Q15', 'Q14–Q15',
+    'Q8–Q10', 'Q8–Q10', 'Q8–Q10', 'Q11–Q13', 'Q11–Q13', 'Q11–Q13', 'Q14–Q15', 'Q14–Q15',
   ]);
   for (const [index, item] of exam.items.entries()) {
     assert.equal(item.topicId, 'staycation');

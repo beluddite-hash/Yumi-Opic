@@ -1,50 +1,8 @@
-사진에 있는 **돌발 주제 7개를 주제별 + 번호별**로 정리했어. 문장은 원문 의미를 유지하면서 **오타·어색한 문장부호만 살짝 정리**했어.
+사진에 있는 **돌발 주제**를 주제별 + 번호별로 정리했어. 문장은 원문 의미를 유지하면서 **오타·어색한 문장부호만 살짝 정리**했어.
 
-## 1. Recycling
+재활용·산업은 이후 고정 세트 자료로 다시 받아 `survey-practice-sets.ts` 의 세트 선언을 따르므로 여기에서 뺐다.
 
-**1. Recycling in Your Country**
-I would like to know about how recycling is practiced in your country. What do people specifically do? Tell me how things are recycled.
-
-**2. Your Recycling Habits**
-Recycling is a common practice. Tell me about all the different kinds of things that you recycle.
-
-**3. A Problem or Memorable Experience with Recycling**
-Problems sometimes occur while recycling. Perhaps the pick-up service did not come as planned. Or, the items were too big for the containers. Or, the container was knocked over and some items spilled out. Tell me about something memorable related to recycling.
-
-**4. Recycling When You Were a Child**
-Tell me what recycling was like when you were a child. Was there a particular place to which you took out the recyclables? Were there any special containers? Describe what it was like and what you did in detail.
-
-**5-A. Changes in the Recycling System**
-The handling of recycling materials has changed over the years. Tell me how recycling materials were collected in the past and how this has evolved over the years.
-
-**5-B. Changes in Attitudes Toward Recycling**
-Describe what the attitude was toward recycling when you were a child. Did people recycle then? Did they throw everything out in the garbage? What were people's views on recycling at that time, and how have they changed over the years?
-
-**6. Recycling News / Environmental Issues**
-Stories about recycling are often in the media. Tell me about one news story that you heard related to recycling or perhaps the environment. Describe what the story was about and what the reaction to the story was.
-
----
-
-## 2. Industry
-
-**1. A Well-Known Industry in Your Country**
-Tell me about one industry in your country that is well-known. You can talk about any industry, such as the entertainment, technology, or automotive industry, or other industries. Pick one industry and tell me all about it.
-
-**2. A Famous or Promising Company**
-Can you tell me about one promising or famous company in this particular industry? Tell me how the company started and all the things that have happened that made it become so well-known.
-
-**3. Challenges Faced by a Company**
-When this company introduced its most important products, were they successful right away? Describe the challenges this company faced and how the company was able to succeed. Tell me in as much detail as you can.
-
-**4. An Industry You Follow / Changes**
-Tell me about an industry you follow. Is it related to food, energy, or mobile computing? How is it different from three years ago?
-
-**5. A Disappointing Product or Incident**
-Tell me about an incident that occurred in the industry you follow. Perhaps a game company released a new game, but the public was disappointed about it. Or perhaps a company released a new device, but it didn't meet people's expectations. How did your community react to the incident?
-
----
-
-## 3. Job Hunting & Career
+## 1. Job Hunting & Career
 
 **1. Companies Young People Want to Work For**
 What are some of the companies that young people want to work for these days? Why do young people want to work for these companies?
@@ -63,7 +21,7 @@ What is an industry or a company that people in your country are talking about n
 
 ---
 
-## 4. Jobs & Workplaces
+## 2. Jobs & Workplaces
 
 **1. Common Jobs & Workplaces in Your Country**
 What kinds of places do people in your country usually work at? Tell me about the common types of jobs and workplaces in your country.
@@ -85,7 +43,7 @@ There have been changes in professions due to the development of technology. Wha
 
 ---
 
-## 5. Doctors & Dentists
+## 3. Doctors & Dentists
 
 **1. A Doctor's or Dentist's Office**
 I'd like to know about the doctor's or dentist's office that you usually go to. Where is it located, and what does it look like? Tell me about it in as much detail as you can.
@@ -101,7 +59,7 @@ Many kinds of unexpected things can happen when you are at a doctor's or dentist
 
 ---
 
-## 6. Appointments
+## 4. Appointments
 
 **1. Places You Go for Appointments**
 People often have appointments for different things. Tell me about the kinds of places you go for different appointments.
@@ -117,7 +75,7 @@ Unexpected things can happen when you make an appointment. Talk about a memorabl
 
 ---
 
-## 7. Hair Salons
+## 5. Hair Salons
 
 **1. Your Hair Salon**
 Where do you typically have your hair cut or styled? Tell me all about the place where you usually get your haircut.
