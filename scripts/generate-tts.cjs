@@ -114,7 +114,14 @@ function loadQuestions() {
     if (CATEGORY && topic.category !== CATEGORY) continue;
     for (const question of topic.questions) add(question);
   }
-  return [...byId].map(([id, text]) => ({ id, text }));
+
+  // 지울 것을 고를 때는 걸러낸 목록이 아니라 문제은행 전체를 봐야 한다. 한 주제만
+  // 다시 만들더라도, 그 주제에서 사라진 문항의 mp3 와 목록은 같이 사라져야 한다.
+  const allIds = new Set([bank.introQuestion?.id]);
+  for (const topic of bank.allTopics) {
+    for (const question of topic.questions) allIds.add(question.id);
+  }
+  return { questions: [...byId].map(([id, text]) => ({ id, text })), allIds };
 }
 
 /* ------------------------------------------------------------------ */
@@ -172,8 +179,7 @@ async function main() {
   if (FILTERED && Object.keys(config).some((key) => config[key] !== previous[key])) {
     throw new Error('Keep the existing voice settings when generating a topic or category.');
   }
-  const questions = loadQuestions();
-  const ids = new Set(questions.map((q) => q.id));
+  const { questions, allIds } = loadQuestions();
 
   const done = FORCE ? {} : previous.questions ?? {};
   const pending = questions.filter((q) => {
@@ -192,7 +198,7 @@ async function main() {
   if (!DRY_RUN && pending.length > 0 && !apiKey) {
     throw new Error('OPENAI_API_KEY is not set.');
   }
-  const removed = FILTERED ? 0 : pruneOrphans(ids);
+  const removed = pruneOrphans(allIds);
 
   if (DRY_RUN) {
     for (const q of pending) console.log(`  + ${q.id}`);
@@ -203,7 +209,13 @@ async function main() {
   mkdirSync(OUT_DIR, { recursive: true });
 
   const stale = new Set(pending.map((q) => q.id));
-  const questionHashes = FILTERED ? { ...previous.questions } : {};
+  const questionHashes = {};
+  if (FILTERED) {
+    // 이번에 만들지 않는 문항의 해시는 그대로 물려받되, 문제은행에서 사라진 것은 버린다.
+    for (const [id, hash] of Object.entries(previous.questions ?? {})) {
+      if (allIds.has(id)) questionHashes[id] = hash;
+    }
+  }
   for (const q of pending) delete questionHashes[q.id];
   let made = 0;
 
