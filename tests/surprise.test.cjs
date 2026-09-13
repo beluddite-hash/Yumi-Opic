@@ -11,25 +11,43 @@ const { repeatPracticeLink } = require('../.test-build/lib/nav');
 const { questionAudioUrl } = require('../.test-build/lib/questionAudio');
 const manifest = require('../src/data/audio-manifest.json');
 
-test('all 35 surprise questions preserve the supplied topic, numbering, title, wording and order', () => {
+/** 고정 세트 자료로 다시 받은 돌발 주제. 번호와 순서는 세트 선언이 정한다. */
+const FIXED_SET_TOPIC_IDS = ['recycling', 'industry'];
+
+test('supplied surprise questions preserve the topic, numbering, title, wording and order', () => {
   const source = readFileSync(path.join(__dirname, 'fixtures/surprise-questions.md'), 'utf8');
   const sections = source.split(/^## \d+\. /m).slice(1);
   assert.equal(bank.surpriseTopics.length, 7);
-  assert.equal(bank.surpriseQuestionCount, 35);
-  assert.deepEqual(bank.surpriseTopics.map(t => t.questions.length), [7, 5, 5, 6, 4, 4, 4]);
+  assert.equal(bank.surpriseQuestionCount, 67);
+  assert.deepEqual(bank.surpriseTopics.map(t => t.questions.length), [19, 25, 5, 6, 4, 4, 4]);
+
+  // 자료 그대로 받은 다섯 주제는 fixture 와 한 글자도 달라지면 안 된다.
+  const supplied = bank.surpriseTopics.filter(t => !FIXED_SET_TOPIC_IDS.includes(t.id));
+  assert.equal(sections.length, supplied.length);
   sections.forEach((section, i) => {
-    const topic = bank.surpriseTopics[i];
+    const topic = supplied[i];
     assert.equal(topic.en, section.split('\n')[0]);
-    assert.equal(topic.category, 'surprise');
     const expected = [...section.matchAll(/\*\*(\d+(?:-[AB])?)\. (.*?)\*\*\s*\n(.*?)(?=\n\n|$)/gs)]
       .map(([, number, title, en]) => ({ number, title, en: en.trim() }));
     assert.deepEqual(topic.questions.map(({ number, title, en }) => ({ number, title, en })), expected);
+  });
+
+  // 고정 세트 주제는 fixture 대신 선언된 세트가 번호와 순서의 근거가 된다.
+  for (const id of FIXED_SET_TOPIC_IDS) {
+    const topic = bank.topicById.get(id);
+    const declared = topic.fixedPracticeSets.flatMap(set => set.items);
+    assert.deepEqual(topic.questions.map(q => q.id), declared.map(entry => entry.questionId));
+    assert.deepEqual(topic.questions.map(q => q.number), declared.map(entry => entry.displayNumber));
+  }
+
+  for (const topic of bank.surpriseTopics) {
+    assert.equal(topic.category, 'surprise');
     for (const q of topic.questions) {
       assert.match(q.ko, /[가-힣]/);
       assert.equal(q.source, 'provided');
-      assert.ok(manifest.questions[q.id]);
+      assert.ok(manifest.questions[q.id], q.id);
     }
-  });
+  }
   const allIds = bank.allTopics.flatMap(t => t.questions.map(q => q.id));
   assert.equal(new Set(allIds).size, allIds.length);
   assert.equal(bank.totalQuestionCount, allIds.length + 1);
@@ -54,7 +72,7 @@ test('surprise practice includes every question once in source order and keeps c
   assert.throws(() => engine.buildPracticeExam({ ...bank.surpriseTopics[0], questions: [] }), /문항이 없습니다/);
 });
 
-test('5-A and 5-B answers survive history roundtrip separately and repeat the same topic', () => {
+test('repeated display numbers survive history roundtrip separately and repeat the same topic', () => {
   const data = new Map();
   const previousWindow = global.window;
   global.window = { localStorage: {
@@ -63,16 +81,19 @@ test('5-A and 5-B answers survive history roundtrip separately and repeat the sa
     removeItem: key => data.delete(key),
   }};
   try {
-    const exam = engine.buildPracticeExam(bank.topicById.get('recycling'));
-    const a = exam.items.find(i => i.question.number === '5-A');
-    const b = exam.items.find(i => i.question.number === '5-B');
+    const topic = bank.topicById.get('recycling');
+    const exam = engine.buildPracticeExam(topic);
+    // 고정 세트 자료는 같은 번호를 여러 세트에서 다시 쓴다. 그래도 답은 섞이면 안 된다.
+    const repeated = exam.items.filter(i => i.question.number === '14');
+    assert.equal(repeated.length, 2);
+    const [a, b] = repeated;
     assert.notEqual(a.slot, b.slot);
     const answers = { [a.slot]: 'Collection systems changed.', [b.slot]: 'Attitudes changed.' };
     storage.pushHistory({ id: 'surprise-test', finishedAt: 1, mode: 'practice', label: '주제별 연습 · 재활용',
-      answered: 2, totalItems: 7, result: { exam, answers, times: {}, hintUse: {}, replays: {}, feedback: {} } });
+      answered: 2, totalItems: topic.questions.length, result: { exam, answers, times: {}, hintUse: {}, replays: {}, feedback: {} } });
     const saved = storage.loadHistory()[0];
     assert.deepEqual(saved.result.answers, answers);
-    assert.deepEqual(saved.result.exam.items.map(i => i.question.number), ['1', '2', '3', '4', '5-A', '5-B', '6']);
+    assert.deepEqual(saved.result.exam.items.map(i => i.question.number), topic.questions.map(q => q.number));
     assert.deepEqual(topicPracticeCounts([saved], bank.allTopics), { recycling: 1 });
     assert.equal(repeatPracticeLink(saved, bank.allTopics).href, '/exam?mode=practice&topic=recycling');
   } finally {

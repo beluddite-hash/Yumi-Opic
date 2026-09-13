@@ -64,10 +64,13 @@ test('all new PARK questions are reachable in full exams and old PARK IDs are ab
 });
 
 test('random single/topic practice uses the replacement bank and preserves its existing eligibility rules', () => {
+  // 이 LCG 는 작은 시드의 첫 출력이 0.24~0.43 에 몰려 후보 목록의 한가운데만 짚는다.
+  // 1문제 추첨은 rng 를 딱 한 번 부르므로, 첫 출력을 버려야 후보 전체를 훑는다.
+  const spread = (seed) => { const rng = seeded(seed); rng(); return rng; };
   for (const mode of ['single', 'set']) {
     const reached = new Set();
     for (let seed = 0; seed < 500; seed++) {
-      for (const item of buildRandomPractice(mode, 'survey', seeded(seed)).items) {
+      for (const item of buildRandomPractice(mode, 'survey', spread(seed)).items) {
         if (item.topicId !== 'park') continue;
         assert.ok(expectedIds.includes(item.question.id));
         if (mode === 'single') assert.ok(!item.question.dependsOn?.length);
