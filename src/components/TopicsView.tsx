@@ -44,7 +44,7 @@ export default function TopicsView() {
 
     <div role="group" aria-label="주제 분류" className="mt-7 flex flex-wrap gap-2">
       {(["survey", "surprise"] as const).map((value) => <button key={value} type="button" aria-pressed={category === value} onClick={() => { setCategory(value); setOpenId(null); }} className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${category === value ? "border-primary/50 bg-primary-tint text-primary-ink" : "border-line text-fg-muted hover:bg-surface-2"}`}>
-        {value === "survey" ? `서베이 주제 ${surveyTopics.length}개` : `돌발 주제 ${visibleSurpriseTopics.length}개`}
+        {value === "survey" ? "서베이 주제" : "돌발 주제"}
       </button>)}
     </div>
     <p className="mt-4 text-sm leading-relaxed text-fg-muted">{category === "surprise"
