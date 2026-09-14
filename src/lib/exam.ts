@@ -242,12 +242,29 @@ function groupCandidates(survey: readonly Topic[], exposure: ExamExposure): Grou
   }));
 }
 
+/**
+ * 한 구간이 쓸 수 있는 주제는 자기 후보 가운데 앞선 다섯이면 충분하다. 구간이 다섯뿐이라
+ * 그 다섯 중 많아야 넷을 다른 구간이 가져가고, 늘 하나는 남는다. 남은 쪽이 우선순위가
+ * 같거나 높으므로 바꿔치면 배정이 나빠지지 않는다. 동점은 섞은 순서가 앞선 쪽을 고르는데
+ * 안정 정렬이 그 순서를 지키므로, 잘라 내기 전과 같은 배정이 나온다.
+ *
+ * 이 가지치기가 없으면 탐색이 "이미 쓴 주제"의 조합으로 커진다. 주제 33개 기준으로
+ * 모의고사 한 번에 재귀 48만 번이 돌았고, 주제를 늘릴수록 더 나빠진다.
+ */
+function preferredCandidates(pool: readonly GroupCandidate[], keep: number): GroupCandidate[] {
+  if (pool.length <= keep) return [...pool];
+  // 고르기만 하고 순서는 건드리지 않는다. 재귀는 섞인 순서로 동점을 가르므로,
+  // 우선순위 순으로 돌려주면 같은 최적해 중 다른 것이 뽑힌다.
+  const kept = new Set([...pool].sort((a, b) => comparePriority(b.priority, a.priority)).slice(0, keep));
+  return pool.filter(candidate => kept.has(candidate));
+}
+
 /** 뒤 구간의 희소한 주제까지 고려해, 주제 중복 없이 전체 우선순위가 가장 높은 배정을 찾는다. */
 function assignGroupTopics(
   surpriseGroups: readonly number[], candidates: readonly GroupCandidate[][], rng: RandomSource,
 ): GroupAssignment | undefined {
-  const pools = candidates.map((pool, index) => shuffle(pool.filter(candidate =>
-    (candidate.topic.category === "surprise") === surpriseGroups.includes(index)), rng));
+  const pools = candidates.map((pool, index) => preferredCandidates(shuffle(pool.filter(candidate =>
+    (candidate.topic.category === "surprise") === surpriseGroups.includes(index)), rng), candidates.length));
   const topicIds = [...new Set(pools.flat().map(candidate => candidate.topic.id))];
   const bits = new Map(topicIds.map((id, i) => [id, 1n << BigInt(i)]));
   const cache = new Map<string, GroupAssignment | undefined>();
