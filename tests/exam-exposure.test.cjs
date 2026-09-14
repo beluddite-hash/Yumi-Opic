@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { allTopics, topicById } = require('../.test-build/data');
+const { DEFAULT_SURVEY_IDS, allTopics, surpriseTopics, topicById } = require('../.test-build/data');
 const engine = require('../.test-build/lib/exam');
 const { questionExposureKey: key, recordQuestionExposure, readExamExposure } = require('../.test-build/lib/examExposure');
 const storage = require('../.test-build/lib/storage');
@@ -99,14 +99,62 @@ test('duplicate IDs, whitespace, curly quotes and trailing punctuation share one
   assert.equal(key({ en: "What's new?" }), key({ en: 'What’s new?' }));
 });
 
-test('consecutive exams cover the expanded bank and repeat less than independent draws', () => {
+const bankKeys = () => new Set(questions.map(key));
+const surveyPool = engine.drawableSurveyTopics.filter(t => DEFAULT_SURVEY_IDS.includes(t.id));
+
+/**
+ * 한 구간은 한 주제의 완성된 세트를 통째로 가져간다. 그래서 한 주제를 다 보려면
+ * 가장 큰 세트로 나눈 만큼의 구간이 필요하고, 은행이 커지면 전 문항을 도는 데 드는
+ * 회차도 같이 늘어난다. 회차를 숫자로 못박아 두면 문항을 추가할 때마다 이 테스트부터
+ * 깨지면서 정작 뽑기 전략이 나빠졌는지는 알려 주지 못한다. 한도는 데이터에서 구한다.
+ */
+function groupDrawsToCover(pool) {
+  return pool.reduce((draws, topic) => {
+    const sets = engine.completeQuestionSets(topic);
+    assert.ok(sets.length, `${topic.id}: 완성된 세트가 없어 한 번도 출제될 수 없다`);
+    const largest = Math.max(...sets.map(set => set.length));
+    return draws + Math.ceil(new Set(topic.questions.map(key)).size / largest);
+  }, 0);
+}
+
+/** 한 번도 겹치지 않게 이상적으로 뽑았을 때 전 문항을 도는 데 필요한 회차. */
+const IDEAL_ROUNDS = Math.max(
+  Math.ceil(groupDrawsToCover(surveyPool) / engine.MIN_FULL_EXAM_SURVEY_TOPICS),
+  Math.ceil(groupDrawsToCover(surpriseTopics) / engine.FULL_EXAM_SURPRISE_GROUPS),
+);
+/** 실제 뽑기는 이상적인 배분보다 오래 걸린다. 이 배수를 넘겨야 깨지면 전략이 나빠진 것이다. */
+const COVERAGE_BUDGET = IDEAL_ROUNDS * 2;
+
+test('consecutive exams cover the whole bank within the budget the bank size implies', () => {
+  const total = bankKeys();
+  for (const seed of [1, 27, 20260913]) {
+    let exposure = {};
+    const seen = new Set();
+    const rng = seeded(seed);
+    let rounds = 0;
+    while (seen.size < total.size && rounds < COVERAGE_BUDGET) {
+      const exam = engine.buildFullExam({ exposure, rng });
+      keys(exam).forEach(k => seen.add(k));
+      exposure = remember(exposure, exam, ++rounds);
+    }
+    const missing = [...total].filter(k => !seen.has(k));
+    // 어떤 문항이 안 나왔는지 함께 남긴다. 숫자만 틀리면 무엇을 고쳐야 할지 알 수 없다.
+    assert.deepEqual(missing.slice(0, 5), [],
+      `seed ${seed}: ${COVERAGE_BUDGET}회를 출제해도 ${missing.length}/${total.size}개 문항이 한 번도 안 나왔다`);
+  }
+});
+
+/** 회차 수는 표본 구간일 뿐이다. 아래 두 비교는 같은 구간의 무작위 뽑기와 견주는 상대값이다. */
+const COMPARISON_ROUNDS = 12;
+
+test('consecutive exams spread wider and repeat less than independent draws', () => {
   for (const seed of [1, 27, 20260913]) {
     let exposure = {};
     const seen = new Set();
     const randomSeen = new Set();
     let previous = new Set(), randomPrevious = new Set(), repeats = 0, randomRepeats = 0;
     const rng = seeded(seed), randomRng = seeded(seed);
-    for (let attempt = 0; attempt < 40; attempt++) {
+    for (let attempt = 0; attempt < COMPARISON_ROUNDS; attempt++) {
       const exam = engine.buildFullExam({ exposure, rng });
       const drawn = keys(exam);
       const randomDrawn = keys(engine.buildFullExam({ rng: randomRng }));
@@ -116,9 +164,10 @@ test('consecutive exams cover the expanded bank and repeat less than independent
       previous = drawn; randomPrevious = randomDrawn;
       exposure = remember(exposure, exam, attempt + 1);
     }
-    assert.equal(seen.size, new Set(questions.map(key)).size, `coverage for seed ${seed}`);
-    assert.ok(seen.size > randomSeen.size, `coverage improvement for seed ${seed}`);
-    assert.ok(repeats < randomRepeats, `repeat improvement for seed ${seed}`);
+    assert.ok(seen.size > randomSeen.size,
+      `seed ${seed}: ${COMPARISON_ROUNDS}회 동안 출제 이력은 ${seen.size}개, 무작위는 ${randomSeen.size}개를 냈다`);
+    assert.ok(repeats < randomRepeats,
+      `seed ${seed}: 직전 회차와 겹친 문항이 출제 이력 ${repeats}개, 무작위 ${randomRepeats}개다`);
   }
 });
 
