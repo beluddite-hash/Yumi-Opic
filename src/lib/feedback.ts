@@ -58,6 +58,23 @@ export const feedbackCategoryLabel: Record<FeedbackCategory, string> = {
 
 export type FlowStatus = "good" | "needs_work";
 
+export interface CriticalCheck {
+  status: FlowStatus;
+  note: string;
+}
+
+export interface CriticalSuggestionCheck extends CriticalCheck {
+  /** needs_work 일 때 improvedAnswer 에 그대로 들어가는 한 개의 짧은 영어 표현. */
+  suggestedExpression: string;
+}
+
+export interface CriticalChecks {
+  questionRelevance: CriticalCheck;
+  logicalDevelopment: CriticalCheck;
+  preferredOpener: CriticalSuggestionCheck;
+  emotionEnding: CriticalSuggestionCheck;
+}
+
 export interface FeedbackCounts {
   evaluated: number;
   topic: number;
@@ -117,6 +134,11 @@ export interface OpicFeedback {
    * none: 발음 피드백 근거가 없음.
    */
   pronunciationBasis: "audio_compare" | "browser_only" | "none";
+  /**
+   * 새 피드백에서는 항상 생성한다. 예전 로컬 기록에는 이 필드가 없으므로 읽기 호환성을
+   * 위해 타입에서는 선택적으로 두고, API route 에서 새 응답을 별도로 필수 검증한다.
+   */
+  criticalChecks?: CriticalChecks;
   items: OpicFeedbackItem[];
   /**
    * 사용자가 실제로 말한 답변에 이번 피드백만 반영해 고친 버전. 새 모범답안이 아니라
@@ -153,10 +175,10 @@ export function feedbackItemQuotes(feedback: OpicFeedback): string[] | undefined
 
 /**
  * 피드백 JSON 에 드는 출력 토큰. 추론 토큰도 여기서 함께 잘린다. 고칠 점마다 고친
- * 답변의 한 조각을 인용하는 `itemQuotes` 가 붙어 1,400 → 1,550 으로 올렸다. 인용문은
+ * 답변의 한 조각을 인용하는 `itemQuotes` 와 네 필수 검사가 붙어 기본 여유를 늘렸다. 인용문은
  * 맨 뒤에 오므로 여기가 모자라면 인용문만 잘려 나가 등급을 가릴 수 없게 된다.
  */
-const FEEDBACK_OUTPUT_TOKENS = 1_550;
+const FEEDBACK_OUTPUT_TOKENS = 1_800;
 /** 영어는 대략 4글자에 1토큰이다. 고친 답변이 원래보다 조금 길어질 수 있어 3글자로 넉넉히 잡는다. */
 const CHARS_PER_OUTPUT_TOKEN = 3;
 const MAX_OUTPUT_TOKENS = 6_000;
@@ -200,6 +222,7 @@ export function isOpicFeedback(value: unknown): value is OpicFeedback {
   const optionalText = (text: unknown) => text === undefined || typeof text === "string";
   return typeof feedback.overall === "string" && !!structure
     && optionalText(feedback.improvedAnswer) && optionalText(feedback.improvedFrom)
+    && (feedback.criticalChecks === undefined || isCriticalChecks(feedback.criticalChecks))
     && statuses.includes(structure.topic) && statuses.includes(structure.detail)
     && statuses.includes(structure.feeling) && typeof structure.note === "string"
     && ["audio_compare", "browser_only", "none"].includes(feedback.pronunciationBasis ?? "")
@@ -207,4 +230,54 @@ export function isOpicFeedback(value: unknown): value is OpicFeedback {
       && categories.includes(item.category) && typeof item.title === "string"
       && typeof item.message === "string" && typeof item.example === "string"
       && optionalText(item.afterQuote));
+}
+
+function isCriticalCheck(value: unknown, withSuggestion: boolean): boolean {
+  if (!value || typeof value !== "object") return false;
+  const check = value as Partial<CriticalSuggestionCheck>;
+  return ["good", "needs_work"].includes(check.status ?? "")
+    && typeof check.note === "string"
+    && (!withSuggestion || typeof check.suggestedExpression === "string");
+}
+
+export function isCriticalChecks(value: unknown): value is CriticalChecks {
+  if (!value || typeof value !== "object") return false;
+  const checks = value as Partial<CriticalChecks>;
+  return isCriticalCheck(checks.questionRelevance, false)
+    && isCriticalCheck(checks.logicalDevelopment, false)
+    && isCriticalCheck(checks.preferredOpener, true)
+    && isCriticalCheck(checks.emotionEnding, true);
+}
+
+function normalizedForInclusion(value: string): string {
+  return value
+    .toLocaleLowerCase("en-US")
+    .replace(/[’‘]/g, "'")
+    .replace(/\.{3}|…/g, "")
+    .replace(/[^a-z0-9']+/g, " ")
+    .trim();
+}
+
+/** 새 AI 응답의 네 필수 검사와 improvedAnswer 연결을 검증한다. 빈 배열이면 재시도하지 않는다. */
+export function criticalFeedbackIssues(value: unknown): string[] {
+  if (!value || typeof value !== "object") return ["criticalChecks is missing"];
+  const feedback = value as Partial<OpicFeedback>;
+  if (feedback.criticalChecks === undefined) return ["criticalChecks is missing"];
+  if (!isCriticalChecks(feedback.criticalChecks)) return ["one or more criticalChecks fields are missing or invalid"];
+
+  const improved = typeof feedback.improvedAnswer === "string"
+    ? normalizedForInclusion(feedback.improvedAnswer)
+    : "";
+  const issues: string[] = [];
+  for (const key of ["preferredOpener", "emotionEnding"] as const) {
+    const check = feedback.criticalChecks[key];
+    if (check.status !== "needs_work") continue;
+    const suggestion = normalizedForInclusion(check.suggestedExpression);
+    if (!suggestion) {
+      issues.push(`${key}.suggestedExpression is empty`);
+    } else if (!improved || !improved.includes(suggestion)) {
+      issues.push(`improvedAnswer does not include ${key}.suggestedExpression`);
+    }
+  }
+  return issues;
 }

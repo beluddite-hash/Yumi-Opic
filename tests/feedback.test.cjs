@@ -18,6 +18,7 @@ test('완료한 N문항의 좋음만 집계하고 미평가와 범위 밖 피드
 });
 const {
   requiresFrontLoadedOpening, isOpicFeedback, readFeedbackResponse, feedbackRewrite, feedbackOutputTokenLimit,
+  criticalFeedbackIssues,
 } = require('../.test-build/lib/feedback');
 
 test('서술형 문항은 두괄식 기준으로 보고 롤플레이는 빼 준다', () => {
@@ -105,4 +106,58 @@ test('연결 표현 유형을 읽고 모르는 유형은 가려낸다', () => {
   const item = { category: 'transition', title: '결과로 넘어갈 때', message: '', example: 'As a result, young people care about balance.' };
   assert.equal(isOpicFeedback({ ...sampleFeedback, items: [item] }), true);
   assert.equal(isOpicFeedback({ ...sampleFeedback, items: [{ ...item, category: 'connector' }] }), false);
+});
+
+test('네 필수 검사를 요구하고 필요한 한 개의 제안이 고친 답변에 반영됐는지 검증한다', () => {
+  const criticalChecks = {
+    questionRelevance: { status: 'good', note: '한 지원 질문에 집중해도 관련성이 있다.' },
+    logicalDevelopment: { status: 'good', note: '짧지만 이유와 결과가 자연스럽다.' },
+    preferredOpener: {
+      status: 'needs_work',
+      note: '긍정적인 특징을 시작하는 표현을 한 번 쓰면 좋다.',
+      suggestedExpression: "What's really nice is I can walk there.",
+    },
+    emotionEnding: {
+      status: 'needs_work',
+      note: '사실 설명 뒤에 맥락에 맞는 반응을 덧붙인다.',
+      suggestedExpression: 'I found it really relaxing.',
+    },
+  };
+  const valid = {
+    ...sampleFeedback,
+    criticalChecks,
+    improvedAnswer: "What's really nice is I can walk there. I found it really relaxing.",
+  };
+
+  assert.deepEqual(criticalFeedbackIssues(valid), []);
+  assert.deepEqual(criticalFeedbackIssues(sampleFeedback), ['criticalChecks is missing']);
+  assert.deepEqual(
+    criticalFeedbackIssues({ ...valid, improvedAnswer: "What's really nice is I can walk there." }),
+    ['improvedAnswer does not include emotionEnding.suggestedExpression'],
+  );
+  assert.deepEqual(
+    criticalFeedbackIssues({
+      ...valid,
+      criticalChecks: {
+        ...criticalChecks,
+        preferredOpener: { ...criticalChecks.preferredOpener, suggestedExpression: '' },
+      },
+    }),
+    ['preferredOpener.suggestedExpression is empty'],
+  );
+  assert.equal(isOpicFeedback(valid), true);
+});
+
+test('이미 자연스러운 opener와 감정 마무리가 있으면 추가 제안 없이 통과한다', () => {
+  const feedback = {
+    ...sampleFeedback,
+    criticalChecks: {
+      questionRelevance: { status: 'good', note: '질문 범위 안이다.' },
+      logicalDevelopment: { status: 'good', note: '짧지만 흐름이 분명하다.' },
+      preferredOpener: { status: 'good', note: '선호 opener를 이미 자연스럽게 썼다.', suggestedExpression: '' },
+      emotionEnding: { status: 'good', note: '자연스러운 반응으로 끝난다.', suggestedExpression: '' },
+    },
+    improvedAnswer: "What's really nice is I can walk there. I really enjoy it.",
+  };
+  assert.deepEqual(criticalFeedbackIssues(feedback), []);
 });

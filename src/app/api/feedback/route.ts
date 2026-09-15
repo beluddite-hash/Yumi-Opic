@@ -1,6 +1,7 @@
 import {
   FEEDBACK_CATEGORIES,
   FEEDBACK_CRITERIA,
+  criticalFeedbackIssues,
   feedbackOutputTokenLimit,
   requiresFrontLoadedOpening,
   type FeedbackResponse,
@@ -32,6 +33,51 @@ const FEEDBACK_SCHEMA = {
       type: "string",
       enum: ["audio_compare", "browser_only", "none"],
     },
+    criticalChecks: {
+      type: "object",
+      properties: {
+        questionRelevance: {
+          type: "object",
+          properties: {
+            status: { type: "string", enum: ["good", "needs_work"] },
+            note: { type: "string" },
+          },
+          required: ["status", "note"],
+          additionalProperties: false,
+        },
+        logicalDevelopment: {
+          type: "object",
+          properties: {
+            status: { type: "string", enum: ["good", "needs_work"] },
+            note: { type: "string" },
+          },
+          required: ["status", "note"],
+          additionalProperties: false,
+        },
+        preferredOpener: {
+          type: "object",
+          properties: {
+            status: { type: "string", enum: ["good", "needs_work"] },
+            note: { type: "string" },
+            suggestedExpression: { type: "string" },
+          },
+          required: ["status", "note", "suggestedExpression"],
+          additionalProperties: false,
+        },
+        emotionEnding: {
+          type: "object",
+          properties: {
+            status: { type: "string", enum: ["good", "needs_work"] },
+            note: { type: "string" },
+            suggestedExpression: { type: "string" },
+          },
+          required: ["status", "note", "suggestedExpression"],
+          additionalProperties: false,
+        },
+      },
+      required: ["questionRelevance", "logicalDevelopment", "preferredOpener", "emotionEnding"],
+      additionalProperties: false,
+    },
     items: {
       type: "array",
       maxItems: 5,
@@ -52,7 +98,7 @@ const FEEDBACK_SCHEMA = {
     // 인용문은 고친 답변에서 그대로 떠 오는 것이라 그 뒤에 둔다. 순서는 items 와 같다.
     itemQuotes: { type: "array", maxItems: 5, items: { type: "string" } },
   },
-  required: ["overall", "structure", "pronunciationBasis", "items", "improvedAnswer", "itemQuotes"],
+  required: ["overall", "structure", "pronunciationBasis", "criticalChecks", "items", "improvedAnswer", "itemQuotes"],
   additionalProperties: false,
 } as const;
 
@@ -136,6 +182,9 @@ function buildPrompt(input: {
     ...structureRules,
     "Evaluate the remaining stages as flow, not as a checklist. Do not force the pattern mechanically when the response is already natural.",
     "Give at most 5 feedback items total. Prefer the highest-impact issues only.",
+    "Required criticalChecks rule: ALWAYS complete questionRelevance, logicalDevelopment, preferredOpener, and emotionEnding. These four internal checks are required independently of structure and items. They never compete with the 5-item limit; a good check may stay out of student-facing items, but it must still be evaluated and recorded.",
+    "Required question-relevance check: statements before the first actual interrogative or imperative are background. The first interrogative OR imperative is the MAIN QUESTION; later questions usually support it as idea prompts or examples. The learner does not need to answer every supporting prompt. Focusing on one legitimate supporting prompt remains relevant. Set needs_work only when the main content genuinely falls outside both the main question and its supporting prompts; never invent drift from an unanswered sub-question.",
+    "Required logical-development check: ALWAYS assess whether details relate to the central point, reason → result makes sense, experience events are understandable in sequence, earlier and later statements do not contradict, ideas connect naturally, content develops instead of merely repeating, and the answer stays within scope. Distinguish missing detail from broken logic. A short but clear answer can be logical; a long answer with disconnected details can need work. Judge easy-to-follow spoken storytelling, not an academic essay.",
     "Priority order: (1) clear storytelling/organization, (2) natural spontaneous spoken delivery, (3) relevant concrete detail, (4) emotion/personal meaning, (5) natural transitions/discourse markers/wrap-up, (6) speaking pace, (7) word stress only when reliably supported, (8) tense/major word order, (9) pronunciation only for severe and reliably supported intelligibility problems.",
     // 연결 표현은 OPIc 에서 아이디어 사이의 관계를 드러내는 축이라 기능별 목록을 그대로 준다.
     // 목록이 없으면 모델이 "연결 표현을 더 쓰세요" 같은 두루뭉술한 조언을 내놓는다.
@@ -156,10 +205,10 @@ function buildPrompt(input: {
     "For well, you know, I mean, so, and 'what else?', do not use a mechanical count threshold. Flag them only when their repetition genuinely interrupts fluency. Never reward mechanical smoothness merely because an answer contains no fillers.",
     "When repetition truly disrupts the answer, quote the learner's exact location and replace only selected occurrences with expressions FROM THE SAME FUNCTION row above. Never swap a marker for one from a different function.",
     "Missing-marker rule: when a relation is clearly there but unmarked (a reason, a result, a contrast) and the sentences land abruptly, add the marker at that exact spot in the learner's own sentence. Do NOT tell the learner to use more connectors in general, and do NOT ask them to cover functions their answer had no reason to use. Skip this entirely when the ideas already flow.",
-    "Required idea-opener rule: check whether the learner naturally uses at least ONE of these instructor-preferred spoken openers anywhere in the answer: 'What's really nice is ...', 'What I like most is ...', 'The problem is ...', 'The thing is ...', or 'Another thing is ...'. If at least one is already used naturally, do not request, insert, or praise additional openers and do not criticize the learner for not using more. One suitable opener per answer is enough.",
-    "If none of those five preferred openers appears, feedback MUST include exactly ONE structure/storytelling improvement item with the meaning '답변 안에서 주요 아이디어를 시작할 때 이런 표현 중 하나를 사용하면 구조가 더 선명해집니다.' Choose exactly ONE opener and give one short English example in the learner's actual context: use 'What's really nice is ...' for a positive feature or advantage, 'What I like most is ...' for a personal favorite, 'The problem is ...' for a clear problem or disadvantage, 'The thing is ...' for an explanation, complication, or important point, or 'Another thing is ...' for another major point. Never choose an opener that conflicts with the learner's meaning.",
+    "Required idea-opener check: check whether the learner naturally uses at least ONE instructor-preferred spoken opener anywhere in the answer. Positive/general family: 'What's really nice is ...', 'What I like most is ...', 'The best part is ...', 'One thing I really like is ...', 'What I really like is ...', 'Another good thing is ...', 'The great thing is ...', 'One thing I can say is ...', 'What makes it special is ...', 'One reason I like it is ...'. Problem/negative: 'The problem is ...', 'The thing is ...'. Additional point: 'Another thing is ...'. If at least one is already used naturally, set preferredOpener.status=good, set suggestedExpression to an empty string, and do not request, insert, or praise an additional opener. One suitable opener per answer is enough.",
+    "If none of the preferred openers appears, set preferredOpener.status=needs_work and recommend EXACTLY ONE contextually suitable opener. Its note should convey '답변 안에서 주요 아이디어를 시작할 때 이런 표현 중 하나를 사용하면 구조가 더 선명해집니다.' Match its actual function: positive feature, preference, problem, explanation/complication, or a genuine additional major point. Never choose an opener that conflicts with the learner's meaning. suggestedExpression must be the exact, complete, contiguous English sentence inserted naturally into improvedAnswer, not a label or an ellipsis template.",
     "Idea-opener style: prefer the natural spoken pattern without automatically adding 'that': 'What's really nice is I can walk there', 'What I like most is it's very convenient', 'The thing is I don't have much time', and 'Another thing is the park is very close to my house.' Keep an existing 'that' only when there is a specific reason. Missing a preferred opener is not a grammar error and does not make otherwise strong logic or relevance weak. Do not require one in every paragraph, add several, make the response sound memorized, or turn it into an essay.",
-    "Reaction/meaning rule: check how each developed major idea or paragraph-like spoken unit ends. The preferred flexible flow is main point → concrete explanation/example/experience → a short reaction, feeling, or personal meaning when the learner's content supports one. If factual detail ends abruptly, say in Korean that the development is natural but one short reaction would make the ending feel more complete, then give ONE easy, common spoken-English example suited to that exact content. Prefer short expressions such as 'It was really fun', 'It was amazing', 'It was pretty stressful', 'I felt relieved', 'I really enjoyed that', 'I found it very relaxing', 'That was my favorite part', 'That's why I like it so much', or 'That's what made it special.' Preserve an emotion already stated or strongly implied. Never invent a conflicting or unsupported emotion, force a reaction into every unit, use advanced vocabulary, or make the ending long or essay-like.",
+    "Required reaction/meaning check: ALWAYS check how each developed major idea or paragraph-like spoken unit ends. The preferred flexible flow is main point → concrete explanation/example/experience → a short reaction, feeling, or personal meaning when the learner's content supports one. If a natural reaction already ends the idea, set emotionEnding.status=good, leave suggestedExpression empty, and do not add another. If factual detail ends abruptly and context supports a reaction, set emotionEnding.status=needs_work, recommend ONE easy contextual expression, and insert it at the relevant location in improvedAnswer. suggestedExpression must be the exact, complete, contiguous English sentence inserted in improvedAnswer. Prefer short expressions such as 'It was really fun', 'It was amazing', 'It was pretty stressful', 'I felt relieved', 'I really enjoyed that', 'I found it very relaxing', 'That was my favorite part', 'That's why I like it so much', or 'That's what made it special.' If no reasonable emotion or personal meaning is supported, set good with a note that no addition is warranted and leave suggestedExpression empty. Never fabricate a feeling merely to satisfy the check.",
     "Logic-independence rule: a missing reaction ending does not make otherwise strong logic or organization weak; keep those criteria good and offer the short reaction only as a completeness improvement. Likewise, an emotional adjective cannot rescue off-topic content or weak logical development. Evaluate relevance, logic, and reaction/meaning independently.",
     "Summary/wrap-up rule: preserve contextual transition and ending coaching. Match the actual discourse function and content: reasons may lead to 'That's why I like it so much'; events to 'So yeah, that's pretty much what happened'; an overall opinion to 'Overall, I think it's a great place'; personal significance to 'That's what makes it special to me'. Do not recommend the same ending every time or a generic connector that does not fit the relationship.",
     "Grammar rule: correct clear tense errors, especially routine versus one specific past event, repeated unintended present/past switching in a story, and inconsistent tense. Also correct major word-order problems that materially affect communication. Do not nitpick articles, minor prepositions, tiny slips, or understandable awkwardness.",
@@ -205,6 +254,55 @@ function buildPrompt(input: {
     `[Independent audio transcription] ${input.audioTranscript || "(not available)"}`,
     `[Speaking duration] ${input.elapsedSec}s`,
     `[Approx. WPM] ${wpm ?? "not reliable"}`,
+  ].join("\n");
+}
+
+async function requestStructuredFeedback(
+  apiKey: string,
+  prompt: string,
+  maxOutputTokens: number,
+): Promise<string> {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_FEEDBACK_MODEL || "gpt-5.6-terra",
+      input: prompt,
+      reasoning: { effort: "low" },
+      max_output_tokens: maxOutputTokens,
+      store: false,
+      text: {
+        verbosity: "low",
+        format: {
+          type: "json_schema",
+          name: "opic_feedback",
+          strict: true,
+          schema: FEEDBACK_SCHEMA,
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("OpenAI feedback request failed", response.status, detail.slice(0, 500));
+    throw new Error(`feedback_failed:${response.status}`);
+  }
+
+  return extractOutputText(await response.json());
+}
+
+function buildCorrectionPrompt(originalPrompt: string, previousOutput: string, issues: string[]): string {
+  return [
+    originalPrompt,
+    "",
+    "The required feedback rule was omitted or inconsistent. Preserve all valid existing feedback and correct ONLY the missing/inconsistent required rule.",
+    `Validation failures: ${issues.join("; ")}`,
+    "Return the complete corrected JSON in the same schema. Do not revise fields that are already valid.",
+    `[Previous feedback JSON] ${previousOutput}`,
   ].join("\n");
 }
 
@@ -254,51 +352,39 @@ export async function POST(request: Request) {
   // 고친 답변은 이 텍스트를 바탕으로 만들라고 지시한다. 프롬프트의 규칙과 같은 순서다.
   const answerBasis = audioTranscript || browserTranscript;
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_FEEDBACK_MODEL || "gpt-5.6-terra",
-      input: buildPrompt({
-        question,
-        topic,
-        type,
-        questionType,
-        browserTranscript,
-        audioTranscript,
-        elapsedSec,
-      }),
-      reasoning: { effort: "low" },
-      max_output_tokens: feedbackOutputTokenLimit(answerBasis.length),
-      store: false,
-      text: {
-        verbosity: "low",
-        format: {
-          type: "json_schema",
-          name: "opic_feedback",
-          strict: true,
-          schema: FEEDBACK_SCHEMA,
-        },
-      },
-    }),
+  const prompt = buildPrompt({
+    question,
+    topic,
+    type,
+    questionType,
+    browserTranscript,
+    audioTranscript,
+    elapsedSec,
   });
+  const maxOutputTokens = feedbackOutputTokenLimit(answerBasis.length);
+  let outputText: string;
+  try {
+    outputText = await requestStructuredFeedback(apiKey, prompt, maxOutputTokens);
+    if (!outputText) throw new Error("empty feedback");
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.error("OpenAI feedback request failed", response.status, detail.slice(0, 500));
+    const firstResult = JSON.parse(outputText) as unknown;
+    const issues = criticalFeedbackIssues(firstResult);
+    if (issues.length > 0) {
+      outputText = await requestStructuredFeedback(
+        apiKey,
+        buildCorrectionPrompt(prompt, outputText, issues),
+        maxOutputTokens,
+      );
+      if (!outputText) throw new Error("empty corrected feedback");
+      const correctedIssues = criticalFeedbackIssues(JSON.parse(outputText) as unknown);
+      if (correctedIssues.length > 0) throw new Error(`invalid critical checks: ${correctedIssues.join("; ")}`);
+    }
+  } catch (error) {
+    console.error("AI feedback generation failed", error);
     return Response.json(
       { error: "AI 피드백을 생성하지 못했습니다. 잠시 뒤 다시 시도해 주세요." },
       { status: 502 },
     );
-  }
-
-  const payload = await response.json();
-  const outputText = extractOutputText(payload);
-  if (!outputText) {
-    return Response.json({ error: "AI 피드백 결과가 비어 있습니다." }, { status: 502 });
   }
 
   try {
