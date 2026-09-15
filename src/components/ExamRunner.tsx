@@ -108,17 +108,17 @@ function fillerFeedback(transcript: string, totalWords: number): string {
   const naturalOpening = hasNaturalThinkingOpening(transcript);
   if (fillerCount === 0) {
     return naturalOpening
-      ? "Natural thinking opener detected. It supports a spontaneous delivery."
-      : "No tracked fillers detected.";
+      ? "자연스러운 생각 시작 표현이 나타나 즉흥적인 전달에 도움이 됩니다."
+      : "확인 대상 필러가 없습니다.";
   }
   const denselyDisruptive = fillerCount >= 8 && fillerCount >= Math.ceil(totalWords * 0.12);
   if (denselyDisruptive) {
-    return `${fillerCount} tracked fillers. They may be interrupting your flow; replace a few with a quiet pause.`;
+    return `${fillerCount}회 · 필러가 반복되어 흐름을 끊을 수 있습니다. 일부는 조용한 멈춤으로 바꿔보세요.`;
   }
   if (naturalOpening) {
-    return `${fillerCount} tracked filler${fillerCount === 1 ? "" : "s"}. The opening sounds like natural real-time thinking.`;
+    return `${fillerCount}회 · 답변 시작의 필러는 생각하면서 말하는 자연스러운 흐름으로 들립니다.`;
   }
-  return `${fillerCount} tracked filler${fillerCount === 1 ? "" : "s"}. This amount can sound natural in spontaneous speech.`;
+  return `${fillerCount}회 · 이 정도의 필러는 즉흥적으로 말할 때 자연스러울 수 있습니다.`;
 }
 
 function formatTime(sec: number): string {
@@ -331,17 +331,17 @@ export default function ExamRunner({
     const cadenceVariation = variation(session.cadenceSamples);
     const flatEnergy = energyVariation !== null && energyVariation < 0.22;
     const hasSelfCorrection = /\b(i mean|rather|sorry|let me (?:rephrase|start again)|what i mean is)\b/i.test(transcript);
-    const pace = wordsPerMinute > 135
-      ? `${wordsPerMinute} WPM · 속도가 빠릅니다. 의식적으로 더 천천히 말해보세요.`
-      : wordsPerMinute > 120
-        ? `${wordsPerMinute} WPM · 조금 빠릅니다. 조금 더 천천히 말해보세요.`
-        : wordsPerMinute >= 90
-          ? `${wordsPerMinute} WPM · 적절한 속도입니다. 지금 속도를 유지하세요.`
-          : wordsPerMinute >= 80
-            ? `${wordsPerMinute} WPM · 차분한 속도입니다. 더 빠르게 말할 필요는 없습니다.`
-          : wordsPerMinute < 80 && fragmented
-            ? `${wordsPerMinute} WPM · 속도보다 짧게 끊긴 생각을 의미 단위로 더 자연스럽게 연결해보세요.`
-            : `${wordsPerMinute} WPM · 차분하게 말하고 있습니다. 더 빠르게 말할 필요는 없습니다.`;
+    const pace = wordsPerMinute >= 106
+      ? `${wordsPerMinute} WPM · 속도가 빠릅니다. 조금 더 천천히 말해보세요.`
+      : wordsPerMinute >= 101
+        ? `${wordsPerMinute} WPM · 조금 빠릅니다. 살짝만 천천히 말해보세요.`
+        : wordsPerMinute >= 96
+          ? `${wordsPerMinute} WPM · 적당한 속도입니다. 조금 더 천천히 말해도 괜찮습니다.`
+          : wordsPerMinute >= 85
+            ? `${wordsPerMinute} WPM · 가장 적절한 속도입니다. 지금 속도를 유지하세요.`
+            : fragmented
+              ? `${wordsPerMinute} WPM · 속도보다 짧게 끊긴 생각을 의미 단위로 더 자연스럽게 연결해보세요.`
+              : `${wordsPerMinute} WPM · 차분하게 말하고 있습니다. 문장이 자연스럽게 이어진다면 이 속도도 괜찮습니다.`;
     const uniformDeliverySignals = [
       cadenceVariation !== null && cadenceVariation < 0.18,
       flatEnergy,
@@ -350,14 +350,14 @@ export default function ExamRunner({
     const spontaneitySignals = Number(naturalThinking) + Number(hasSelfCorrection);
     const scriptedSignals = Math.max(0, uniformDeliverySignals - spontaneitySignals);
     const spontaneity = scriptedSignals >= 3
-      ? "Very scripted-sounding · Several delivery signals are unusually uniform. Add natural thought pauses and emphasis."
+      ? "준비한 느낌이 매우 강합니다 · 여러 전달 신호가 지나치게 일정합니다. 자연스러운 생각 멈춤과 강조를 더해보세요."
       : scriptedSignals === 2
-        ? "Somewhat prepared-sounding · Let the rhythm vary naturally as each idea develops."
+        ? "다소 준비한 느낌입니다 · 생각이 전개될 때 리듬을 자연스럽게 변화시켜보세요."
         : naturalThinking
-          ? "Natural / spontaneous · Natural thinking language supports real-time thought formulation."
+          ? "자연스럽고 즉흥적입니다 · 생각하면서 말하는 자연스러운 표현이 나타납니다."
           : hasSelfCorrection
-          ? "Natural / spontaneous · The self-correction sounds like normal real-time speaking."
-          : "Natural / spontaneous · No strong scripted-delivery pattern detected.";
+          ? "자연스럽고 즉흥적입니다 · 스스로 고쳐 말한 부분이 실제로 생각하며 말하는 흐름처럼 들립니다."
+          : "자연스럽고 즉흥적입니다 · 외운 답변처럼 들리는 뚜렷한 전달 패턴이 없습니다.";
     setVoiceAnalyses((current) => ({
       ...current,
       [targetSlot]: {
@@ -366,18 +366,18 @@ export default function ExamRunner({
         pace,
         longPauseCount: session.longPauseCount,
         chunking: fragmented
-          ? "Fragmented · Try grouping short pieces into complete thoughts."
-          : "Connected · Ideas generally flow in meaningful thought groups.",
+          ? "연결이 끊깁니다 · 짧게 끊긴 표현을 완전한 의미 단위로 묶어보세요."
+          : "연결이 자연스럽습니다 · 의미 단위별로 생각이 비교적 자연스럽게 이어집니다.",
         stressDelivery: flatEnergy
           ? "전달이 전체적으로 조금 고르게 들립니다. 핵심 단어에 조금 더 힘을 주면 전달력이 좋아집니다."
           : energyVariation === null
-            ? "Not enough audio data to assess overall stress reliably."
-            : "Varied · Key ideas have useful changes in emphasis.",
+            ? "전체 강세를 안정적으로 판단할 만큼 음성 데이터가 충분하지 않습니다."
+            : "강세 변화가 자연스럽습니다 · 중요한 부분에 적절한 강조가 나타납니다.",
         energy: flatEnergy
-          ? "Browser amplitude variation was limited. This alone does not establish monotone or incorrect intonation."
+          ? "브라우저에서 측정한 음량 변화가 적었습니다. 이것만으로 단조롭거나 잘못된 억양이라고 판단할 수는 없습니다."
           : energyVariation === null
-            ? "Energy variation is unavailable in this browser session."
-            : "Natural energy variation detected across the response.",
+            ? "이번 브라우저 세션에서는 에너지 변화를 확인할 수 없습니다."
+            : "답변 전체에서 자연스러운 에너지 변화가 나타납니다.",
         fillers: fillerFeedback(transcript, totalWords),
         spontaneity,
       },
@@ -1147,21 +1147,21 @@ export default function ExamRunner({
           )}
 
           {isPractice && (
-            <section className="mt-6 border border-exam-line bg-exam-frame-2 px-4 py-4" aria-label="VOICE ANALYSIS">
-              <h2 className="text-xs font-bold tracking-wide text-exam-ink">VOICE ANALYSIS</h2>
+            <section className="mt-6 border border-exam-line bg-exam-frame-2 px-4 py-4" aria-label="음성 분석">
+              <h2 className="text-xs font-bold tracking-wide text-exam-ink">음성 분석</h2>
               {analyzingSlot === slot ? (
                 <p className="mt-2 text-sm text-exam-ink-muted">답변을 분석하고 있습니다.</p>
               ) : voiceAnalysis ? (
                 <>
-                  <p className="mt-1 text-[11px] text-exam-ink-muted">Speaking time {formatTime(voiceAnalysis.speakingTimeSec)}</p>
+                  <p className="mt-1 text-[11px] text-exam-ink-muted">발화 시간 {formatTime(voiceAnalysis.speakingTimeSec)}</p>
                   <dl className="mt-3 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">Pace</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.pace}</dd></div>
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">5+ sec Pauses</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.longPauseCount} · Natural thinking pauses under 5 seconds are not counted.</dd></div>
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">Chunking</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.chunking}</dd></div>
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">Stress &amp; Delivery</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.stressDelivery}</dd></div>
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">Energy / Monotone</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.energy}</dd></div>
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">Fillers</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.fillers}</dd></div>
-                    <div className="sm:col-span-2"><dt className="text-xs font-semibold text-exam-ink-muted">Spontaneity</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.spontaneity}</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">말하기 속도</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.pace}</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.longPauseCount} · 5초 미만의 자연스러운 생각 멈춤은 계산하지 않습니다.</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">의미 단위 연결</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.chunking}</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">강세 및 전달</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.stressDelivery}</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">에너지 / 단조로움</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.energy}</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">필러</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.fillers}</dd></div>
+                    <div className="sm:col-span-2"><dt className="text-xs font-semibold text-exam-ink-muted">즉흥성</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.spontaneity}</dd></div>
                   </dl>
                 </>
               ) : (

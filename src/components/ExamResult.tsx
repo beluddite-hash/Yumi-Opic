@@ -736,17 +736,17 @@ function ItemResult({
           {recording && <RecordingPlayer recording={recording} slot={item.slot} />}
 
           {voiceAnalysis && (
-            <section className="mt-5 rounded-xl border border-line bg-surface-2 px-4 py-4" aria-label="VOICE ANALYSIS">
-              <h3 className="text-xs font-bold tracking-wide text-fg">VOICE ANALYSIS</h3>
-              <p className="mt-1 text-[11px] text-fg-subtle">Speaking time {formatTime(voiceAnalysis.speakingTimeSec)}</p>
+            <section className="mt-5 rounded-xl border border-line bg-surface-2 px-4 py-4" aria-label="음성 분석">
+              <h3 className="text-xs font-bold tracking-wide text-fg">음성 분석</h3>
+              <p className="mt-1 text-[11px] text-fg-subtle">발화 시간 {formatTime(voiceAnalysis.speakingTimeSec)}</p>
               <dl className="mt-3 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
-                <div><dt className="text-xs font-semibold text-fg-subtle">Pace</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.pace}</dd></div>
-                <div><dt className="text-xs font-semibold text-fg-subtle">5+ sec Pauses</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.longPauseCount} · Natural thinking pauses under 5 seconds are not counted.</dd></div>
-                <div><dt className="text-xs font-semibold text-fg-subtle">Chunking</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.chunking}</dd></div>
-                <div><dt className="text-xs font-semibold text-fg-subtle">Stress &amp; Delivery</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.stressDelivery}</dd></div>
-                <div><dt className="text-xs font-semibold text-fg-subtle">Energy / Monotone</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.energy}</dd></div>
-                <div><dt className="text-xs font-semibold text-fg-subtle">Fillers</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.fillers}</dd></div>
-                <div className="sm:col-span-2"><dt className="text-xs font-semibold text-fg-subtle">Spontaneity</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.spontaneity}</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">말하기 속도</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.pace}</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.longPauseCount} · 5초 미만의 자연스러운 생각 멈춤은 계산하지 않습니다.</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">의미 단위 연결</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.chunking}</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">강세 및 전달</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.stressDelivery}</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">에너지 / 단조로움</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.energy}</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">필러</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.fillers}</dd></div>
+                <div className="sm:col-span-2"><dt className="text-xs font-semibold text-fg-subtle">즉흥성</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.spontaneity}</dd></div>
               </dl>
             </section>
           )}
