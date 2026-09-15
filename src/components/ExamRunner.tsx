@@ -67,6 +67,7 @@ interface VoiceAnalysisSession {
   startedAt: number;
   lastSpeechAt: number;
   transcript: string;
+  noticeablePauseCount: number;
   longPauseCount: number;
   currentChunkWords: number;
   chunkWordCounts: number[];
@@ -77,6 +78,7 @@ interface VoiceAnalysisSession {
   resolveCompletion: () => void;
 }
 
+const NOTICEABLE_PAUSE_MS = 3_000;
 const LONG_PAUSE_MS = 5_000;
 const CHUNK_GAP_MS = 1_000;
 const NATURAL_THINKING_EXPRESSION = /\b(?:well|um|uh|oh|right|yeah|let me (?:think|see)|what else(?: can i say)?|how should i put it|i(?:'|’)m trying to think|i(?:'|’)m not really sure(?:,? but)?|that(?:'|’)s a good question|i need a (?:second|moment) to think about that|give me a (?:second|moment)|i guess|i suppose|actually|i mean)\b/i;
@@ -93,6 +95,21 @@ function hasNaturalThinkingOpening(transcript: string): boolean {
 
 function hasNaturalThinkingExpression(transcript: string): boolean {
   return NATURAL_THINKING_EXPRESSION.test(transcript);
+}
+
+function pauseThinkingSuggestion(transcript: string): string {
+  if (/\b(?:example|experience|a time when)\b/i.test(transcript)) return "Let me think of an example.";
+  if (/\b(?:problem|issue|difficult|complicated)\b/i.test(transcript)) return "How should I put it?";
+  if (/\b(?:not sure|maybe|probably)\b/i.test(transcript)) return "I'm not really sure, but...";
+  const options = [
+    "Well, let me think.",
+    "Let me see.",
+    "What else?",
+    "Give me a second.",
+    "Come to think of it...",
+    "Now that I think about it...",
+  ];
+  return options[countEnglishWords(transcript) % options.length];
 }
 
 function variation(values: number[]): number | null {
@@ -416,6 +433,8 @@ export default function ExamRunner({
         wordsPerMinute,
         pace,
         paceDetails: paceChangeFeedback(session.cadenceSamples, wordsPerMinute),
+        noticeablePauseCount: session.noticeablePauseCount,
+        pauseSuggestion: pauseThinkingSuggestion(transcript),
         longPauseCount: session.longPauseCount,
         chunking: fragmented
           ? "연결이 끊깁니다 · 짧게 끊긴 표현을 완전한 의미 단위로 묶어보세요."
@@ -493,6 +512,7 @@ export default function ExamRunner({
         startedAt: Date.now(),
         lastSpeechAt: 0,
         transcript: baseRef.current,
+        noticeablePauseCount: 0,
         longPauseCount: 0,
         currentChunkWords: 0,
         chunkWordCounts: [],
@@ -522,6 +542,7 @@ export default function ExamRunner({
           if (analysisSession.lastSpeechAt > 0) {
             const gap = now - analysisSession.lastSpeechAt;
             if (gap >= LONG_PAUSE_MS) analysisSession.longPauseCount += 1;
+            else if (gap >= NOTICEABLE_PAUSE_MS) analysisSession.noticeablePauseCount += 1;
             if (gap >= CHUNK_GAP_MS && analysisSession.currentChunkWords > 0) {
               analysisSession.chunkWordCounts.push(analysisSession.currentChunkWords);
               analysisSession.currentChunkWords = 0;
@@ -1208,7 +1229,12 @@ export default function ExamRunner({
                   <p className="mt-1 text-[11px] text-exam-ink-muted">발화 시간 {formatTime(voiceAnalysis.speakingTimeSec)}</p>
                   <dl className="mt-3 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
                     <div><dt className="text-xs font-semibold text-exam-ink-muted">말하기 속도</dt><dd className="mt-1 space-y-1 leading-relaxed"><p>{voiceAnalysis.pace}</p>{voiceAnalysis.paceDetails?.map((detail) => <p key={detail}>{detail}</p>)}</dd></div>
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.longPauseCount} · 5초 미만의 자연스러운 생각 멈춤은 계산하지 않습니다.</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">3초 이상 5초 미만 멈춤</dt><dd className="mt-1 leading-relaxed">{(voiceAnalysis.noticeablePauseCount ?? 0) > 0
+                      ? `${voiceAnalysis.noticeablePauseCount} · 3초 이상 멈추는 구간이 있습니다. 생각할 때 완전히 멈추기보다 자연스러운 표현을 사용해 답변을 이어가보세요. 예: “${voiceAnalysis.pauseSuggestion ?? "Well, let me think."}”`
+                      : "0 · 3초 미만의 자연스러운 생각 멈춤은 괜찮습니다."}</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.longPauseCount > 0
+                      ? `${voiceAnalysis.longPauseCount} · 5초 이상 멈추는 구간은 위험합니다. 답변 흐름이 끊겨 보일 수 있으니 필러나 생각 표현을 활용해 말의 흐름을 유지하세요. 예: “${voiceAnalysis.pauseSuggestion ?? "Well, let me think."}”`
+                      : "0 · 5초 이상 멈추는 구간이 없습니다."}</dd></div>
                     <div><dt className="text-xs font-semibold text-exam-ink-muted">의미 단위 연결</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.chunking}</dd></div>
                     <div><dt className="text-xs font-semibold text-exam-ink-muted">강세 및 전달</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.stressDelivery}</dd></div>
                     <div><dt className="text-xs font-semibold text-exam-ink-muted">에너지 / 단조로움</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.energy}</dd></div>

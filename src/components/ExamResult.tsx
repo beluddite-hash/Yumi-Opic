@@ -51,6 +51,8 @@ export interface VoiceAnalysis {
   wordsPerMinute: number;
   pace: string;
   paceDetails?: string[];
+  noticeablePauseCount?: number;
+  pauseSuggestion?: string;
   longPauseCount: number;
   chunking: string;
   stressDelivery: string;
@@ -742,7 +744,12 @@ function ItemResult({
               <p className="mt-1 text-[11px] text-fg-subtle">발화 시간 {formatTime(voiceAnalysis.speakingTimeSec)}</p>
               <dl className="mt-3 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
                 <div><dt className="text-xs font-semibold text-fg-subtle">말하기 속도</dt><dd className="mt-1 space-y-1 leading-relaxed text-fg-muted"><p>{voiceAnalysis.pace}</p>{voiceAnalysis.paceDetails?.map((detail) => <p key={detail}>{detail}</p>)}</dd></div>
-                <div><dt className="text-xs font-semibold text-fg-subtle">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.longPauseCount} · 5초 미만의 자연스러운 생각 멈춤은 계산하지 않습니다.</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">3초 이상 5초 미만 멈춤</dt><dd className="mt-1 leading-relaxed text-fg-muted">{(voiceAnalysis.noticeablePauseCount ?? 0) > 0
+                  ? `${voiceAnalysis.noticeablePauseCount} · 3초 이상 멈추는 구간이 있습니다. 생각할 때 완전히 멈추기보다 자연스러운 표현을 사용해 답변을 이어가보세요. 예: “${voiceAnalysis.pauseSuggestion ?? "Well, let me think."}”`
+                  : "0 · 3초 미만의 자연스러운 생각 멈춤은 괜찮습니다."}</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.longPauseCount > 0
+                  ? `${voiceAnalysis.longPauseCount} · 5초 이상 멈추는 구간은 위험합니다. 답변 흐름이 끊겨 보일 수 있으니 필러나 생각 표현을 활용해 말의 흐름을 유지하세요. 예: “${voiceAnalysis.pauseSuggestion ?? "Well, let me think."}”`
+                  : "0 · 5초 이상 멈추는 구간이 없습니다."}</dd></div>
                 <div><dt className="text-xs font-semibold text-fg-subtle">의미 단위 연결</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.chunking}</dd></div>
                 <div><dt className="text-xs font-semibold text-fg-subtle">강세 및 전달</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.stressDelivery}</dd></div>
                 <div><dt className="text-xs font-semibold text-fg-subtle">에너지 / 단조로움</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.energy}</dd></div>
