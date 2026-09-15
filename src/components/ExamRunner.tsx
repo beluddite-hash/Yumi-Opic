@@ -103,6 +103,57 @@ function variation(values: number[]): number | null {
   return Math.sqrt(variance) / mean;
 }
 
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[middle - 1] + sorted[middle]) / 2
+    : sorted[middle];
+}
+
+/** 받아쓰기 갱신 간격은 거칠기 때문에 표본이 충분하고 구간 차이가 클 때만 안내한다. */
+function paceChangeFeedback(samples: number[], overallWpm: number): string[] {
+  const usable = samples.filter((value) => Number.isFinite(value) && value >= 0.7 && value <= 6);
+  if (usable.length < 9) return [];
+
+  const third = Math.floor(usable.length / 3);
+  const opening = median(usable.slice(0, third));
+  const middle = median(usable.slice(third, usable.length - third));
+  const ending = median(usable.slice(usable.length - third));
+  const rest = median(usable.slice(third));
+  const openingRushed = (opening >= rest * 1.35 && opening - rest >= 0.45)
+    || (overallWpm >= 106 && opening >= middle * 0.9);
+  const acceleratesAfterRushedOpening = openingRushed
+    && ending >= opening * 1.2
+    && ending - opening >= 0.35;
+  const suddenMiddleAcceleration = middle >= opening * 1.4
+    && middle - opening >= 0.5
+    && ending >= middle * 0.85;
+  const endAcceleration = middle >= opening * 1.08
+    && ending >= middle * 1.18
+    && ending >= opening * 1.35
+    && ending - opening >= 0.5;
+  const controlledOpening = !openingRushed
+    && overallWpm <= 100
+    && opening <= rest * 1.05;
+
+  const feedback: string[] = [];
+  if (acceleratesAfterRushedOpening) {
+    feedback.push("서론부터 속도가 빠릅니다. 처음에는 조금 천천히 시작하고 이후에도 속도를 일정하게 유지해보세요.");
+  } else if (openingRushed) {
+    feedback.push("서론은 살짝 천천히 시작해보세요. 처음부터 서두르지 않으면 전체 답변이 더 안정적으로 들립니다.");
+  } else if (controlledOpening) {
+    feedback.push("서론을 차분하게 시작해서 전체 답변이 안정적으로 들립니다.");
+  }
+  if (suddenMiddleAcceleration && !acceleratesAfterRushedOpening) {
+    feedback.push("중간 부분에서 속도가 갑자기 빨라집니다. 전체 속도를 조금 더 일정하게 유지해보세요.");
+  }
+  if (endAcceleration && !acceleratesAfterRushedOpening) {
+    feedback.push("뒤로 갈수록 말하는 속도가 빨라집니다. 마지막까지 같은 속도를 유지해보세요.");
+  }
+  return feedback;
+}
+
 function fillerFeedback(transcript: string, totalWords: number): string {
   const fillerCount = countFillers(transcript);
   const naturalOpening = hasNaturalThinkingOpening(transcript);
@@ -334,9 +385,9 @@ export default function ExamRunner({
     const pace = wordsPerMinute >= 106
       ? `${wordsPerMinute} WPM · 속도가 빠릅니다. 조금 더 천천히 말해보세요.`
       : wordsPerMinute >= 101
-        ? `${wordsPerMinute} WPM · 조금 빠릅니다. 살짝만 천천히 말해보세요.`
+        ? `${wordsPerMinute} WPM · 조금 빠릅니다. 살짝 천천히 말해보세요.`
         : wordsPerMinute >= 96
-          ? `${wordsPerMinute} WPM · 적당한 속도입니다. 조금 더 천천히 말해도 괜찮습니다.`
+          ? `${wordsPerMinute} WPM · 적당한 속도입니다. 조금 느려져도 됩니다.`
           : wordsPerMinute >= 85
             ? `${wordsPerMinute} WPM · 가장 적절한 속도입니다. 지금 속도를 유지하세요.`
             : fragmented
@@ -364,6 +415,7 @@ export default function ExamRunner({
         speakingTimeSec,
         wordsPerMinute,
         pace,
+        paceDetails: paceChangeFeedback(session.cadenceSamples, wordsPerMinute),
         longPauseCount: session.longPauseCount,
         chunking: fragmented
           ? "연결이 끊깁니다 · 짧게 끊긴 표현을 완전한 의미 단위로 묶어보세요."
@@ -1155,7 +1207,7 @@ export default function ExamRunner({
                 <>
                   <p className="mt-1 text-[11px] text-exam-ink-muted">발화 시간 {formatTime(voiceAnalysis.speakingTimeSec)}</p>
                   <dl className="mt-3 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
-                    <div><dt className="text-xs font-semibold text-exam-ink-muted">말하기 속도</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.pace}</dd></div>
+                    <div><dt className="text-xs font-semibold text-exam-ink-muted">말하기 속도</dt><dd className="mt-1 space-y-1 leading-relaxed"><p>{voiceAnalysis.pace}</p>{voiceAnalysis.paceDetails?.map((detail) => <p key={detail}>{detail}</p>)}</dd></div>
                     <div><dt className="text-xs font-semibold text-exam-ink-muted">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.longPauseCount} · 5초 미만의 자연스러운 생각 멈춤은 계산하지 않습니다.</dd></div>
                     <div><dt className="text-xs font-semibold text-exam-ink-muted">의미 단위 연결</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.chunking}</dd></div>
                     <div><dt className="text-xs font-semibold text-exam-ink-muted">강세 및 전달</dt><dd className="mt-1 leading-relaxed">{voiceAnalysis.stressDelivery}</dd></div>

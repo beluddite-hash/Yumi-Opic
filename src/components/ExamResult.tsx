@@ -50,6 +50,7 @@ export interface VoiceAnalysis {
   speakingTimeSec: number;
   wordsPerMinute: number;
   pace: string;
+  paceDetails?: string[];
   longPauseCount: number;
   chunking: string;
   stressDelivery: string;
@@ -740,7 +741,7 @@ function ItemResult({
               <h3 className="text-xs font-bold tracking-wide text-fg">음성 분석</h3>
               <p className="mt-1 text-[11px] text-fg-subtle">발화 시간 {formatTime(voiceAnalysis.speakingTimeSec)}</p>
               <dl className="mt-3 grid gap-x-5 gap-y-3 text-sm sm:grid-cols-2">
-                <div><dt className="text-xs font-semibold text-fg-subtle">말하기 속도</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.pace}</dd></div>
+                <div><dt className="text-xs font-semibold text-fg-subtle">말하기 속도</dt><dd className="mt-1 space-y-1 leading-relaxed text-fg-muted"><p>{voiceAnalysis.pace}</p>{voiceAnalysis.paceDetails?.map((detail) => <p key={detail}>{detail}</p>)}</dd></div>
                 <div><dt className="text-xs font-semibold text-fg-subtle">5초 이상 멈춤</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.longPauseCount} · 5초 미만의 자연스러운 생각 멈춤은 계산하지 않습니다.</dd></div>
                 <div><dt className="text-xs font-semibold text-fg-subtle">의미 단위 연결</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.chunking}</dd></div>
                 <div><dt className="text-xs font-semibold text-fg-subtle">강세 및 전달</dt><dd className="mt-1 leading-relaxed text-fg-muted">{voiceAnalysis.stressDelivery}</dd></div>
