@@ -80,7 +80,7 @@ export default function HomeView() {
     </Card>}
 
     <section className="mt-4 grid gap-4 sm:grid-cols-2">
-      <ModeButton href="/topics" title="주제별 연습" desc="서베이 11개·돌발 7개 주제를 골라 연습합니다." disabled={!canContinue} />
+      <ModeButton href="/topics" title="주제별 연습" desc="서베이·돌발 주제를 골라 연습합니다." disabled={!canContinue} />
       <ModeButton href="/exam?mode=full" title="실전 모의고사" desc="고른 주제와 돌발 주제를 섞어 실제 시험과 같은 1~15번을 봅니다." primary disabled={!canContinue} />
     </section>
 
