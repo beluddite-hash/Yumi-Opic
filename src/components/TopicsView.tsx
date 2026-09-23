@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { allTopics, surveyTopics, surpriseTopics } from "@/data";
 import { DRAW_EXCLUDED_TOPIC_IDS, selectPracticeQuestions, TYPE_LABELS } from "@/lib/exam";
@@ -15,9 +16,16 @@ const excludedNames = surveyTopics.filter((topic) => DRAW_EXCLUDED_TOPIC_IDS.inc
 const visibleSurpriseTopics = surpriseTopics.filter((topic) => topic.id !== "job-hunting");
 const visibleSurpriseQuestionCount = visibleSurpriseTopics.reduce((sum, topic) => sum + topic.questions.length, 0);
 
-export default function TopicsView({ initialCategory = "survey" }: { initialCategory?: "survey" | "surprise" }) {
+export default function TopicsView() {
   const [openId, setOpenId] = useState<string | null>(null);
-  const [category, setCategory] = useState<"survey" | "surprise">(initialCategory);
+  const searchParams = useSearchParams();
+  const category = searchParams.get("category") === "surprise" ? "surprise" : "survey";
+  function selectCategory(value: "survey" | "surprise") {
+    const url = new URL(window.location.href);
+    url.searchParams.set("category", value);
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    setOpenId(null);
+  }
   const { history, error, remove, removeAll, removeSelected } = usePracticeHistory();
   const entries = useMemo(() => history.filter((entry) => entry.mode !== "full"), [history]);
   const counts = useMemo(() => topicPracticeCounts(history, allTopics), [history]);
@@ -43,7 +51,7 @@ export default function TopicsView({ initialCategory = "survey" }: { initialCate
     </header>
 
     <div role="group" aria-label="주제 분류" className="mt-7 flex flex-wrap gap-2">
-      {(["survey", "surprise"] as const).map((value) => <button key={value} type="button" aria-pressed={category === value} onClick={() => { setCategory(value); setOpenId(null); }} className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${category === value ? "border-primary/50 bg-white text-[#4338ca]" : "border-line text-fg-muted hover:bg-surface-2"}`}>
+      {(["survey", "surprise"] as const).map((value) => <button key={value} type="button" aria-pressed={category === value} onClick={() => selectCategory(value)} className={`min-h-11 rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${category === value ? "border-primary/50 bg-white text-[#4338ca]" : "border-line text-fg-muted hover:bg-surface-2"}`}>
         {value === "survey" ? `서베이 주제 ${surveyTopics.length}개` : `돌발 주제 ${visibleSurpriseTopics.length}개`}
       </button>)}
     </div>
