@@ -50,7 +50,12 @@ export default function HomeView() {
       </p>
     )}
 
-    {last && repeat && <Card className="mt-7 p-5 sm:p-6">
+    <section className="mt-4 grid gap-4 sm:grid-cols-2">
+      <ModeButton href="/topics" title="주제별 연습" desc="서베이·돌발 주제를 골라 연습합니다." />
+      <ModeButton href="/exam?mode=full" title="실전 모의고사" desc="고른 주제와 돌발 주제를 섞어 실제 시험과 같은 1~15번을 봅니다." primary />
+    </section>
+
+    {last && repeat && <Card className="mt-4 p-5 sm:p-6">
       <p className="text-xs text-fg-subtle">마지막 연습 · {formatHistoryStamp(last)}</p>
       <p className="mt-1.5 text-base font-medium">{repeat.label}{!repeat.label.includes(MODE_LABELS[last.mode] ?? last.mode) && <span className="ml-2 text-xs font-normal text-fg-muted">{MODE_LABELS[last.mode] ?? last.mode}</span>}</p>
       <p className="mt-1 text-xs text-fg-muted">{last.answered}/{last.totalItems}문항 답변</p>
@@ -59,11 +64,6 @@ export default function HomeView() {
         <Link href={`/exam?history=${encodeURIComponent(last.id)}`} className="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm text-fg-muted transition-colors hover:bg-surface-2">지난 결과 보기</Link>
       </div>
     </Card>}
-
-    <section className="mt-4 grid gap-4 sm:grid-cols-2">
-      <ModeButton href="/topics" title="주제별 연습" desc="서베이·돌발 주제를 골라 연습합니다." />
-      <ModeButton href="/exam?mode=full" title="실전 모의고사" desc="고른 주제와 돌발 주제를 섞어 실제 시험과 같은 1~15번을 봅니다." primary />
-    </section>
 
     <section className="mt-4 rounded-xl border border-line px-5 py-4">
       <h2 className="text-sm font-medium">랜덤 연습</h2>
