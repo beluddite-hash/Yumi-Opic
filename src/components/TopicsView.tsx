@@ -14,7 +14,6 @@ import { Badge, Card, SourceBadge } from "./ui";
 /** 모의고사와 랜덤 연습에서 빠지는 주제 이름. 랜덤 링크 옆에 알린다. */
 const excludedNames = surveyTopics.filter((topic) => DRAW_EXCLUDED_TOPIC_IDS.includes(topic.id)).map((topic) => topic.ko).join("·");
 const visibleSurpriseTopics = surpriseTopics.filter((topic) => topic.id !== "job-hunting");
-const visibleSurpriseQuestionCount = visibleSurpriseTopics.reduce((sum, topic) => sum + topic.questions.length, 0);
 
 export default function TopicsView() {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -56,7 +55,7 @@ export default function TopicsView() {
       </button>)}
     </div>
     <p className="mt-4 text-sm leading-relaxed text-fg-muted">{category === "surprise"
-      ? `돌발 ${visibleSurpriseQuestionCount}문항을 제공 자료의 번호와 순서대로 연습합니다. 5-A·5-B도 각각 선택할 수 있습니다. 질문은 MP3로 들을 수 있으며, 원하는 번호로 이동해 답변할 수 있습니다.`
+      ? "돌발 문항을 제공 자료의 번호와 순서대로 연습할 수 있습니다. 질문은 MP3로 들을 수 있으며, 원하는 번호로 이동해 답변할 수 있습니다."
       : "선택한 주제의 문제를 2~15번에 유형별로 배정하며 같은 질문이 중복될 수 있습니다. 집에서 보내는 휴가는 지정된 11문항을 순서대로 연습합니다. 원하는 문항만 답변하고 나머지는 건너뛰어도 됩니다."}</p>
     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
       <span>{RANDOM_SCOPE_LABELS[category]} 주제에서 랜덤으로{category === "survey" && ` (${excludedNames} 제외)`}</span>
