@@ -60,6 +60,9 @@ interface AudioSession {
   chunks: Blob[];
   frame: number;
   saveOnStop: boolean;
+  aiTranscription: boolean;
+  completion: Promise<void>;
+  resolveCompletion: () => void;
 }
 
 interface VoiceAnalysisSession {
@@ -312,6 +315,11 @@ export default function ExamRunner({
   /** 함께 켜 본 뒤 받아쓰기가 소리를 못 받고 있는지 지켜보는 저울. */
   const probeRef = useRef<MicProbe | null>(null);
   const recordingsRef = useRef<Record<number, AnswerRecording>>({});
+  const [transcribing, setTranscribing] = useState(false);
+  const transcriptionJob = useRef<Promise<void> | null>(null);
+  const captureCompletion = useRef<Promise<void> | null>(null);
+  const failedTranscriptions = useRef(new Map<number, Blob>());
+  const navigationBusy = useRef(false);
   /** 낭독을 시작한 시각. 길이가 뒤늦게 와도 진행 막대의 기준점은 여기로 고정한다. */
   const playStartedAtRef = useRef(0);
   const wakeLockRef = useRef<WakeLockHandle | null>(null);
@@ -462,14 +470,51 @@ export default function ExamRunner({
     const session = audioRef.current;
     audioRef.current = null;
     setMicLevel(0);
-    if (!session) return;
+    if (!session) return captureCompletion.current ?? Promise.resolve();
     session.saveOnStop = save;
+    if (save) {
+      captureCompletion.current = session.completion;
+      void session.completion.then(() => {
+        if (captureCompletion.current === session.completion) captureCompletion.current = null;
+      });
+    }
     if (session.recorder.state !== "inactive") {
       session.recorder.stop();
     } else {
       disposeAudioSession(session);
+      session.resolveCompletion();
     }
+    return session.completion;
   }, [disposeAudioSession]);
+
+  const transcribeRecording = useCallback((targetSlot: number, blob: Blob): Promise<void> => {
+    if (transcriptionJob.current) return transcriptionJob.current;
+    failedTranscriptions.current.set(targetSlot, blob);
+    setTranscribing(true);
+    setMicError(null);
+    const job = (async () => {
+      try {
+        const body = new FormData();
+        const extension = blob.type.includes("mp4") ? "mp4" : blob.type.includes("ogg") ? "ogg" : "webm";
+        body.append("audio", blob, `answer-${targetSlot}.${extension}`);
+        const response = await fetch("/api/transcribe", { method: "POST", body, signal: AbortSignal.timeout(60_000) });
+        const data = await response.json() as { text?: string; error?: string };
+        if (!response.ok || !data.text?.trim()) throw new Error(data.error || "AI 전사를 완료하지 못했습니다.");
+        const text = data.text.trim();
+        answersRef.current = { ...answersRef.current, [targetSlot]: text };
+        setAnswers((previous) => ({ ...previous, [targetSlot]: text }));
+        failedTranscriptions.current.delete(targetSlot);
+        setMicNotice("녹음한 답변의 AI 전사가 완료되었습니다.");
+      } catch (error) {
+        setMicError(error instanceof Error ? error.message : "AI 전사를 완료하지 못했습니다. 다시 시도해 주세요.");
+      } finally {
+        transcriptionJob.current = null;
+        setTranscribing(false);
+      }
+    })();
+    transcriptionJob.current = job;
+    return job;
+  }, []);
 
   const stopDictation = useCallback((mode: "flush" | "discard") => {
     const handle = dictationRef.current;
@@ -598,16 +643,16 @@ export default function ExamRunner({
   }, [finishVoiceAnalysis, isPractice]);
 
   /**
-   * 녹음이 마이크를 쥐는 바람에 받아쓰기가 한 글자도 못 받고 있다. 녹음을 놓아
-   * 주고 받아쓰기를 다시 켠 뒤, 이 기기에서는 다음부터 처음부터 받아쓰기만 쓴다.
+   * 마이크 충돌이 나면 녹음을 유지하고 브라우저 받아쓰기를 종료한다.
    */
   const handleMicConflict = useCallback((targetSlot: number) => {
     probeRef.current = null;
-    applyMicMode("dictation-only");
-    stopAudioCapture(false);
-    startDictationFor(targetSlot);
-    setMicNotice("녹음이 마이크를 쥐고 있어 받아쓰기가 한 글자도 받지 못했습니다. 녹음을 끄고 받아쓰기를 다시 켰습니다.");
-  }, [applyMicMode, startDictationFor, stopAudioCapture]);
+    applyMicMode("recording-only");
+    stopDictation("discard");
+    if (audioRef.current?.slot === targetSlot) audioRef.current.aiTranscription = true;
+    setListening(true);
+    setMicNotice("녹음을 계속합니다. 답변을 멈추면 AI가 텍스트로 전사합니다.");
+  }, [applyMicMode, stopDictation]);
 
   const beginAudioCapture = useCallback(async (targetSlot: number) => {
     if (!recordingAvailable) return;
@@ -628,7 +673,9 @@ export default function ExamRunner({
       context.createMediaStreamSource(stream).connect(analyser);
 
       const mimeType = preferredRecordingMime();
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      const recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64_000 });
+      let resolveCompletion!: () => void;
+      const completion = new Promise<void>((resolve) => { resolveCompletion = resolve; });
       const session: AudioSession = {
         slot: targetSlot,
         recorder,
@@ -638,22 +685,34 @@ export default function ExamRunner({
         chunks: [],
         frame: 0,
         saveOnStop: false,
+        aiTranscription: micModeRef.current === "recording-only" || !isSpeechRecognitionSupported(),
+        completion,
+        resolveCompletion,
       };
       audioRef.current = session;
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) session.chunks.push(event.data);
       };
-      recorder.onstop = () => {
+      recorder.onstop = async () => {
         disposeAudioSession(session);
-        if (!session.saveOnStop || session.chunks.length === 0) return;
-        const blob = new Blob(session.chunks, { type: recorder.mimeType || "audio/webm" });
-        const url = URL.createObjectURL(blob);
-        setRecordings((prev) => {
-          const old = prev[session.slot];
-          if (old) URL.revokeObjectURL(old.url);
-          return { ...prev, [session.slot]: { url, mimeType: blob.type } };
-        });
+        if (!session.saveOnStop) { session.resolveCompletion(); return; }
+        if (session.chunks.length === 0) {
+          if (session.aiTranscription) failedTranscriptions.current.set(session.slot, new Blob());
+          setMicError("녹음된 소리가 없습니다. 마이크 권한을 확인하고 다시 녹음해 주세요.");
+          session.resolveCompletion();
+          return;
+        }
+        try {
+          const blob = new Blob(session.chunks, { type: recorder.mimeType || "audio/webm" });
+          const url = URL.createObjectURL(blob);
+          setRecordings((prev) => {
+            const old = prev[session.slot];
+            if (old) URL.revokeObjectURL(old.url);
+            return { ...prev, [session.slot]: { url, mimeType: blob.type } };
+          });
+          if (session.aiTranscription) await transcribeRecording(session.slot, blob);
+        } finally { session.resolveCompletion(); }
       };
 
       const samples = new Uint8Array(analyser.fftSize);
@@ -680,13 +739,12 @@ export default function ExamRunner({
         }
 
         // 소리는 이만큼 들어오는데 받아쓰기가 한 글자도 없다면 이 녹음이 마이크를
-        // 쥐고 있는 것이다. 그때는 녹음을 접고 받아쓰기에 마이크를 넘긴다.
+        // 쥐고 있는 것이다. 녹음은 유지하고 완료 후 AI로 전사한다.
         const probe = probeRef.current;
         if (probe) {
           probeRef.current = observeMicLevel(probe, targetLevel, now);
           if (isMicConflict(probeRef.current)) {
             handleMicConflict(session.slot);
-            return;
           }
         }
 
@@ -703,15 +761,17 @@ export default function ExamRunner({
       draw();
     } catch {
       if (audioTokenRef.current === token) {
-        setMicError("마이크 녹음 권한을 확인해 주세요. 음성 인식은 되더라도 녹음본 저장이 제한될 수 있습니다.");
+        setListening(false);
+        setMicError("녹음을 시작하지 못했습니다. 마이크 권한을 확인하고 다시 녹음해 주세요.");
       }
     }
-  }, [disposeAudioSession, handleMicConflict, recordingAvailable, stopAudioCapture]);
+  }, [disposeAudioSession, handleMicConflict, recordingAvailable, stopAudioCapture, transcribeRecording]);
 
-  const stopAnswerCapture = useCallback((mode: "save" | "discard"): Promise<void> => {
+  const stopAnswerCapture = useCallback(async (mode: "save" | "discard"): Promise<void> => {
     const analysisSession = voiceAnalysisSessionRef.current;
     stopDictation(mode === "save" ? "flush" : "discard");
-    stopAudioCapture(mode === "save");
+    await stopAudioCapture(mode === "save");
+    if (mode === "save" && transcriptionJob.current) await transcriptionJob.current;
     if (!analysisSession) return Promise.resolve();
     if (mode === "discard") {
       if (voiceAnalysisSessionRef.current === analysisSession) {
@@ -734,27 +794,32 @@ export default function ExamRunner({
   }, [finishVoiceAnalysis, stopAudioCapture, stopDictation]);
 
   const editAnswer = useCallback((targetSlot: number, text: string) => {
+    if (transcriptionJob.current) return;
+    failedTranscriptions.current.delete(targetSlot);
     dictationSessionRef.current += 1;
     baseRef.current = text;
     setAnswers((prev) => ({ ...prev, [targetSlot]: text }));
   }, []);
 
   const beginAnswerCapture = useCallback((targetSlot: number) => {
+    if (transcriptionJob.current || captureCompletion.current) return;
     stopAnswerCapture("discard");
     setMicError(null);
+    setMicNotice(loadMicMode() === "recording-only" ? "음성을 녹음합니다. 녹음을 멈추거나 다음 문제로 이동하면 AI가 답변을 전사합니다." : null);
 
     // 위의 `dictating` 상태와 다르다. 저쪽은 지금 돌고 있는지, 이쪽은 이 브라우저가
     // 받아쓰기를 할 수 있는지다.
-    const canDictate = isSpeechRecognitionSupported();
+    micModeRef.current = loadMicMode();
+    const canDictate = micModeRef.current !== "recording-only" && isSpeechRecognitionSupported();
     const dictationOn = canDictate ? startDictationFor(targetSlot) : false;
     if (!canDictate) baseRef.current = answersRef.current[targetSlot] ?? "";
 
-    // 마이크를 한 곳에서만 쓸 수 있는 기기에서는 녹음을 열지 않는다. 열면 받아쓰기가
-    // 소리를 못 받는다. 받아쓰기가 아예 없는 브라우저라면 녹음이라도 남긴다.
-    const recordingOn = !canDictate || micModeRef.current === "share";
+    // 모바일은 녹음만 실행하고 완료 후 AI로 전사한다.
+    const recordingOn = recordingAvailable;
+    if (!canDictate && !recordingOn) setMicError("이 브라우저에서 녹음을 사용할 수 없습니다. 마이크 권한을 확인하거나 다른 브라우저에서 열어 주세요.");
     if (recordingOn) void beginAudioCapture(targetSlot);
     setListening(dictationOn || recordingOn);
-  }, [beginAudioCapture, startDictationFor, stopAnswerCapture]);
+  }, [beginAudioCapture, startDictationFor, stopAnswerCapture, recordingAvailable]);
 
   const playQuestion = useCallback((targetSlot: number, questionId: string, text: string, isReplay: boolean) => {
     // 다시 듣기를 누르면 직전 몇 초의 답변 녹음은 버리고, 재청취가 끝난 뒤 새로 시작한다.
@@ -858,16 +923,13 @@ export default function ExamRunner({
     if (el) el.scrollTop = el.scrollHeight;
   }, [answer, interim]);
 
-  /** 이 기기가 정말 마이크를 하나만 쓰는지 녹음을 함께 켜서 다시 겪어 본다. */
-  function retryMicShare() {
-    applyMicMode("share");
-    setMicNotice(null);
-    if (listening && !typing) beginAnswerCapture(slot);
-  }
-
   async function goToQuestion(targetIndex: number) {
+    if (navigationBusy.current) return;
     if (targetIndex < 0 || targetIndex >= exam.items.length || targetIndex === index) return;
+    navigationBusy.current = true;
     await stopAnswerCapture("save");
+    navigationBusy.current = false;
+    if (failedTranscriptions.current.size) return;
     stopSpeaking();
     setIndex(targetIndex);
   }
@@ -877,13 +939,18 @@ export default function ExamRunner({
   }
 
   async function submit() {
+    if (navigationBusy.current) return;
+    navigationBusy.current = true;
     await stopAnswerCapture("save");
+    navigationBusy.current = false;
+    if (failedTranscriptions.current.size) return;
     stopSpeaking();
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function resetAttempt() {
+    failedTranscriptions.current.clear();
     exposureAttemptRef.current += ":retry";
     exposedSlotsRef.current.clear();
     stopAnswerCapture("discard");
@@ -950,7 +1017,7 @@ export default function ExamRunner({
    * 답변 텍스트는 여기 적지 않는다. 실전에는 없는 것이라 `연습 도구` 쪽에 남긴다.
    * 질문이 나오는 동안에는 받아쓰기가 꺼져 있는 것이 정상이라 아무 말도 하지 않는다.
    */
-  const dictationLabel = !micAvailable || typing || phase !== "answering"
+  const dictationLabel = micMode === "recording-only" || !micAvailable || typing || phase !== "answering"
     ? null
     : !dictating
       ? "받아쓰기 꺼짐"
@@ -972,6 +1039,7 @@ export default function ExamRunner({
 
   return (
     <main className={`mx-auto w-full ${isFixedPractice ? "max-w-6xl" : "max-w-5xl"} px-4 pb-28 pt-6 sm:px-6`}>
+      {transcribing && <div role="status" aria-live="polite" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6"><p className="rounded-xl bg-white p-6 text-black">녹음한 답변을 AI가 전사하고 있습니다. 잠시 기다려 주세요.</p></div>}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
         <Link
           href={exit.href}
@@ -1046,7 +1114,7 @@ export default function ExamRunner({
                       type="button"
                       onClick={() => beginAnswerCapture(slot)}
                       className="min-h-11 w-full rounded border border-exam-accent px-2 text-[11px] font-bold text-exam-accent transition hover:bg-exam-accent hover:text-exam-accent-fg"
-                    >받아쓰기 다시 켜기</button>
+                    >{micMode === "recording-only" ? "다시 녹음하기" : "받아쓰기 다시 켜기"}</button>
                   )}
                 </div>
               )}
@@ -1108,6 +1176,7 @@ export default function ExamRunner({
             <div className="mt-5 border border-exam-line bg-exam-frame-2 px-4 py-3">
               {micError && <p role="alert" className="text-xs leading-relaxed text-exam-rec">{micError}</p>}
               {micNotice && <p role="status" className={`text-xs leading-relaxed text-exam-ink-muted${micError ? " mt-2" : ""}`}>{micNotice}</p>}
+              {failedTranscriptions.current.has(slot) && <button type="button" onClick={() => { const blob = failedTranscriptions.current.get(slot); if (blob) void transcribeRecording(slot, blob); }} className="mt-3 min-h-11 rounded border border-exam-accent px-3 text-sm">AI 전사 다시 시도</button>}
               {micError && !typing && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
@@ -1135,7 +1204,7 @@ export default function ExamRunner({
                 <div className="flex items-center justify-between gap-2 border-b border-exam-line bg-exam-frame-2 px-3 py-2 text-xs">
                   <span className="inline-flex items-center gap-1.5 font-semibold">
                     {listening ? (
-                      <><span className="h-2 w-2 animate-rec-pulse rounded-full bg-exam-rec" />녹음 중 · 말하는 대로 적힙니다</>
+                      <><span className="h-2 w-2 animate-rec-pulse rounded-full bg-exam-rec" />{micMode === "recording-only" ? "녹음 중 · 답변 후 AI가 전사합니다" : "녹음 중 · 말하는 대로 적힙니다"}</>
                     ) : "내 답변"}
                   </span>
                   <span className="tabular-nums text-exam-ink-muted">{words}단어 · {formatTime(elapsed)}</span>
@@ -1187,13 +1256,7 @@ export default function ExamRunner({
                 </div>
               </div>
 
-              {micAvailable && recordingAvailable && micMode === "dictation-only" && (
-                <p className="mt-2 text-xs leading-relaxed text-exam-ink-muted">
-                  이 기기는 마이크를 한 번에 한 곳에서만 쓸 수 있어 받아쓰기만 켭니다. 화면에 적히는 텍스트가 곧 답변이 되고, 녹음본이 없어 나중에 바로잡을 수 없습니다. 잘못 적힌 곳은 <strong className="font-semibold text-exam-ink">직접 입력·고쳐 쓰기</strong>로 다듬으세요. 녹음본과 발음 비교가 필요하면 노트북에서 연습하는 편이 낫습니다.{" "}
-                  <button type="button" onClick={retryMicShare} className="underline underline-offset-2 transition hover:text-exam-ink">녹음도 함께 켜보기</button>
-                </p>
-              )}
-              {!micAvailable && <p className="mt-2 text-xs leading-relaxed text-exam-ink-muted">이 브라우저는 음성 받아쓰기를 지원하지 않습니다. 녹음은 가능할 수 있으며, Chrome이나 Edge에서는 받아쓰기도 사용할 수 있습니다.</p>}
+              {micMode === "recording-only" && <p className="mt-2 text-xs leading-relaxed text-exam-ink-muted">음성을 녹음한 뒤 AI가 답변을 텍스트로 전사합니다. 녹음 중에는 실시간 받아쓰기가 표시되지 않습니다.</p>}
 
               <div className="h-24 overflow-y-auto rounded border border-exam-line bg-exam-frame-2 px-3 py-2.5 text-sm leading-relaxed">
                 {reveal === "script" && (

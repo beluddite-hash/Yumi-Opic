@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { allTopics } from "@/data";
 import { formatHistoryStamp } from "@/lib/history";
-import { loadMicMode } from "@/lib/micShare";
 import { RANDOM_SCOPE_LABELS, RANDOM_SCOPES, randomPracticeLink, repeatPracticeLink } from "@/lib/nav";
 import Footer from "./Footer";
 import { usePracticeHistory } from "./PracticeHistory";
@@ -19,13 +18,7 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 export default function HomeView() {
-  /** 마이크를 한 곳에서만 쓰는 기기(휴대폰·태블릿). 여기서는 녹음본이 남지 않는다. */
-  const [dictationOnly, setDictationOnly] = useState(false);
   const { history } = usePracticeHistory();
-
-  useEffect(() => {
-    setDictationOnly(loadMicMode() === "dictation-only");
-  }, []);
 
   const last = history[0];
   const repeat = useMemo(() => last && repeatPracticeLink(last, allTopics), [last]);
@@ -38,17 +31,6 @@ export default function HomeView() {
 
     <p className="mt-5 text-2xl font-semibold leading-snug tracking-tight">오늘은 어떤 연습을 할까요?</p>
     <p className="mt-2 text-sm leading-relaxed text-fg-muted">오늘은 한 문제부터 가볍게 풀어볼까요?</p>
-
-    {/*
-      휴대폰에서도 연습은 되지만 받아쓰기 텍스트 하나에 모든 게 걸린다. 그 텍스트가
-      틀리면 AI 피드백도 틀린 문장을 고쳐 주므로, 연습을 고르기 전에 미리 알린다.
-    */}
-    {dictationOnly && (
-      <p className="mt-5 rounded-xl border border-line bg-surface-2 px-4 py-3 text-xs leading-relaxed text-fg-muted">
-        <strong className="font-semibold text-fg">노트북에서 연습하시길 권합니다.</strong> 휴대폰은 마이크를 한 곳에서만 쓸 수 있어 받아쓰기만
-        켜지고 녹음본이 남지 않습니다. 받아쓰기가 잘못 적어도 바로잡을 길이 없어 AI 피드백까지 그 텍스트를 그대로 믿습니다.
-      </p>
-    )}
 
     <section className="mt-4 grid gap-4 sm:grid-cols-2">
       <ModeButton href="/topics" title="주제별 연습" desc="서베이 (선택형) / 돌발 (공통형) 주제를 골라 연습합시다" />
@@ -98,7 +80,7 @@ export default function HomeView() {
 }
 
 function ModeButton({ href, title, desc, primary = false }: { href: string; title: string; desc: string; primary?: boolean }) {
-  const className = `flex min-h-36 flex-col rounded-2xl border p-6 shadow-card transition hover:bg-white ${primary ? "border-primary/40 bg-primary-tint" : "border-line bg-primary-tint hover:border-line-strong"}`;
+  const className = `flex min-h-36 flex-col rounded-2xl border p-6 shadow-card transition hover:bg-white hover:text-black [&:hover_span]:text-black ${primary ? "border-primary/40 bg-primary-tint" : "border-line bg-primary-tint hover:border-line-strong"}`;
 
   return <Link href={href} className={className}>
     <span className="text-xl font-semibold tracking-tight">{title}</span>

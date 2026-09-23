@@ -1,21 +1,7 @@
 "use client";
 
-/**
- * 받아쓰기와 녹음이 마이크를 함께 쓸 수 있는 기기인지 정한다.
- *
- * 노트북 크롬은 SpeechRecognition 과 getUserMedia 를 동시에 연다. 휴대폰
- * (안드로이드 크롬·iOS 사파리)은 마이크를 한 곳에서만 쓰고, 나중에 연 쪽이
- * 마이크를 가져간다. 답변을 받을 때 받아쓰기를 먼저 켜고 녹음을 그다음에 열기
- * 때문에 휴대폰에서는 늘 녹음이 이긴다. 그래서 음량 레벨은 잘 움직이는데
- * 받아쓰기는 한 글자도 오지 않는다.
- *
- * 답변 텍스트가 비면 채점도 AI 피드백도 막히므로, 마이크를 하나만 쓸 수 있는
- * 기기에서는 받아쓰기를 살리고 녹음을 접는다. 그 대신 녹음본 발음 비교는 쓸 수
- * 없다.
- */
-
-/** `share` 는 받아쓰기와 녹음을 함께, `dictation-only` 는 받아쓰기만 켠다. */
-export type MicMode = "share" | "dictation-only";
+/** Mobile devices reserve the microphone for recording, then transcribe with AI. */
+export type MicMode = "share" | "recording-only" | "dictation-only";
 
 const MIC_MODE_KEY = "yumi-opic:mic-mode";
 
@@ -25,20 +11,14 @@ interface AgentLike {
   userAgentData?: { mobile?: boolean };
 }
 
-/**
- * 처음 보는 기기의 첫 판단. 휴대폰·태블릿으로 보이면 겪어 보기 전에 받아쓰기만
- * 켠다. 한 번 겪어 보고 정한 값(`loadMicMode`)이 있으면 그쪽이 먼저다. 다만
- * 데스크톱(`isDesktopAgent`)은 그 값과 상관없이 늘 함께 켠다.
- *
- * iPadOS 사파리는 스스로를 `Macintosh` 라고 적으므로 손가락 입력 개수로 가린다.
- */
+/** 휴대폰·태블릿은 녹음 후 AI 전사, 데스크톱은 기존 병행 녹음 방식. */
 export function guessMicMode(agent: AgentLike | undefined): MicMode {
   if (!agent) return "share";
-  if (agent.userAgentData?.mobile === true) return "dictation-only";
+  if (agent.userAgentData?.mobile === true) return "recording-only";
   const ua = agent.userAgent ?? "";
-  if (/Android|iPhone|iPod|iPad|Mobile|Silk|Kindle|Opera Mini/i.test(ua)) return "dictation-only";
+  if (/Android|iPhone|iPod|iPad|Mobile|Silk|Kindle|Opera Mini/i.test(ua)) return "recording-only";
   // 데스크톱 사파리를 자처하는 아이패드
-  if (/Macintosh/i.test(ua) && (agent.maxTouchPoints ?? 0) > 1) return "dictation-only";
+  if (/Macintosh/i.test(ua) && (agent.maxTouchPoints ?? 0) > 1) return "recording-only";
   return "share";
 }
 
@@ -63,15 +43,15 @@ export function isDesktopAgent(agent: AgentLike | undefined): boolean {
 
 export function loadMicMode(): MicMode {
   if (typeof window === "undefined") return "share";
-  // 데스크톱은 늘 함께 쓴다. 겪어 보고 잘못 남긴 값이 있어도 따르지 않는다.
+  const guessed = guessMicMode(window.navigator);
+  if (guessed === "recording-only") return guessed;
   if (isDesktopAgent(window.navigator)) return "share";
   try {
     const saved = window.localStorage.getItem(MIC_MODE_KEY);
-    if (saved === "share" || saved === "dictation-only") return saved;
-  } catch {
-    /* 저장소를 막아 둔 브라우저 */
-  }
-  return guessMicMode(window.navigator);
+    if (saved === "dictation-only" || saved === "recording-only") return "recording-only";
+    if (saved === "share") return "share";
+  } catch { /* Storage may be unavailable. */ }
+  return guessed;
 }
 
 export function saveMicMode(mode: MicMode): void {
