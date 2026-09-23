@@ -73,8 +73,6 @@ export default function TopicsView() {
         <div id={`${topic.id}-questions`} hidden={!open} className="divide-y divide-line border-t border-line">{open && questions.map((q) => <div key={q.id} className="p-4">
           <div className="flex flex-wrap items-center gap-2">{q.number && <span className="text-sm font-semibold text-fg">{q.number}번</span>}<span className="text-xs font-semibold text-primary-ink">{topic.category === "surprise" ? TYPE_LABELS[q.type].split(" · ")[0] : TYPE_LABELS[q.type]}</span><SourceBadge source={q.source} /></div>
           {q.title && <p className="mt-2 text-sm font-medium text-fg">{q.title}</p>}
-          <p className="mt-2 text-sm leading-relaxed text-fg">{q.en}</p>
-          <p className="mt-1 text-xs leading-relaxed text-fg-subtle">{q.ko}</p>
         </div>)}</div>
       </Card>;
     })}</div>
