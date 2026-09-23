@@ -7,7 +7,6 @@ import { formatHistoryStamp } from "@/lib/history";
 import { loadMicMode } from "@/lib/micShare";
 import { RANDOM_SCOPE_LABELS, RANDOM_SCOPES, randomPracticeLink, repeatPracticeLink } from "@/lib/nav";
 import Footer from "./Footer";
-import DailySpeakingCard from "./DailySpeakingCard";
 import { usePracticeHistory } from "./PracticeHistory";
 import ThemeToggle from "./ThemeToggle";
 import { Card } from "./ui";
@@ -38,7 +37,7 @@ export default function HomeView() {
     </div>
 
     <p className="mt-5 text-2xl font-semibold leading-snug tracking-tight">오늘은 어떤 연습을 할까요?</p>
-    <p className="mt-2 text-sm leading-relaxed text-fg-muted">서베이 주제와 돌발 주제를 골라 질문을 듣고 답변하는 연습을 합니다.</p>
+    <p className="mt-2 text-sm leading-relaxed text-fg-muted">오늘은 한 문제부터 가볍게 풀어볼까요?</p>
 
     {/*
       휴대폰에서도 연습은 되지만 받아쓰기 텍스트 하나에 모든 게 걸린다. 그 텍스트가
@@ -93,8 +92,6 @@ export default function HomeView() {
         </Link>
       ))}</Card>
     </section>}
-
-    <DailySpeakingCard history={history} />
 
     <Footer />
   </main>;
