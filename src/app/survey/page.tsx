@@ -1,5 +1,5 @@
-import SurveyView from "@/components/SurveyView";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <SurveyView />;
+  redirect("/");
 }
