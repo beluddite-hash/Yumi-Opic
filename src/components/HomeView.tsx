@@ -98,7 +98,7 @@ export default function HomeView() {
 }
 
 function ModeButton({ href, title, desc, primary = false }: { href: string; title: string; desc: string; primary?: boolean }) {
-  const className = `flex min-h-36 flex-col rounded-2xl border p-6 shadow-card transition hover:bg-white ${primary ? "border-primary/40 bg-primary-tint" : "border-line bg-surface hover:border-line-strong"}`;
+  const className = `flex min-h-36 flex-col rounded-2xl border p-6 shadow-card transition hover:bg-white ${primary ? "border-primary/40 bg-primary-tint" : "border-line bg-primary-tint hover:border-line-strong"}`;
 
   return <Link href={href} className={className}>
     <span className="text-xl font-semibold tracking-tight">{title}</span>
