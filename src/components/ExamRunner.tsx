@@ -330,7 +330,7 @@ export default function ExamRunner({
   answersRef.current = answers;
   recordingsRef.current = recordings;
 
-  const exit = useMemo(() => examExitLink(exam.mode), [exam.mode]);
+  const exit = useMemo(() => examExitLink(exam.mode, exam), [exam]);
   /** 답변은 결과 화면에 닿아야 저장된다. 그 전에 나가면 말한 내용이 사라진다. */
   const unsaved = !submitted && exam.items.some((entry) => hasAnswerText(answers[entry.slot]) || recordings[entry.slot]);
 

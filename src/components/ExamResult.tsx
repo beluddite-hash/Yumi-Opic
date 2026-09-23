@@ -394,8 +394,8 @@ export default function ExamResult({
   const waitingSlots = slotsAwaitingFeedback(answeredSlots, feedbackBySlot, pendingSlots);
   const feedbackCount = answeredSlots.filter((slot) => feedbackBySlot[slot]).length;
   const feedbackCounts = summarizeFeedback(answeredSlots, feedbackBySlot);
-  const exit = examExitLink(exam.mode);
-  const next = nextPracticeLink(exam.mode);
+  const exit = examExitLink(exam.mode, exam);
+  const next = nextPracticeLink(exam.mode, exam);
   // 연습을 마친 뒤 답변이나 피드백을 덧붙였다면 언제 저장한 회차인지 함께 적는다.
   const finishedStamp = formatHistoryStamp({ finishedAt: attempt.finishedAt });
   const savedStamp = formatHistoryStamp({ finishedAt: attempt.finishedAt, updatedAt: savedAt });

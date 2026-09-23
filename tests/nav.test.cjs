@@ -65,3 +65,12 @@ test('주제 ID 에 특수문자가 있어도 링크가 깨지지 않는다', ()
   const link = repeatPracticeLink(entry({ label: '주제별 연습 · 이상한 주제' }), [odd]);
   assert.equal(link.href, '/exam?mode=practice&topic=a%2Fb%3Fc');
 });
+
+test('돌발 연습을 나가거나 마치면 돌발 탭으로 돌아간다', () => {
+  for (const topic of allTopics) {
+    const exam = buildPracticeExam(topic, () => 0);
+    const expected = topic.category === 'surprise' ? '/topics?category=surprise' : '/topics';
+    assert.equal(examExitLink(exam.mode, exam).href, expected);
+    assert.equal(nextPracticeLink(exam.mode, exam).href, expected);
+  }
+});

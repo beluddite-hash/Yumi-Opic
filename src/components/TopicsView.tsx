@@ -15,9 +15,9 @@ const excludedNames = surveyTopics.filter((topic) => DRAW_EXCLUDED_TOPIC_IDS.inc
 const visibleSurpriseTopics = surpriseTopics.filter((topic) => topic.id !== "job-hunting");
 const visibleSurpriseQuestionCount = visibleSurpriseTopics.reduce((sum, topic) => sum + topic.questions.length, 0);
 
-export default function TopicsView() {
+export default function TopicsView({ initialCategory = "survey" }: { initialCategory?: "survey" | "surprise" }) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const [category, setCategory] = useState<"survey" | "surprise">("survey");
+  const [category, setCategory] = useState<"survey" | "surprise">(initialCategory);
   const { history, error, remove, removeAll, removeSelected } = usePracticeHistory();
   const entries = useMemo(() => history.filter((entry) => entry.mode !== "full"), [history]);
   const counts = useMemo(() => topicPracticeCounts(history, allTopics), [history]);

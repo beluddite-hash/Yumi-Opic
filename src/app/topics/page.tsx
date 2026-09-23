@@ -1,5 +1,6 @@
 import TopicsView from "@/components/TopicsView";
 
-export default function Page() {
-  return <TopicsView />;
+export default async function Page({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const { category } = await searchParams;
+  return <TopicsView key={category} initialCategory={category === "surprise" ? "surprise" : "survey"} />;
 }
