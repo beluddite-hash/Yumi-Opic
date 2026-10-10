@@ -42,6 +42,7 @@ function withDictation(navigator, run, options = {}) {
     /** 마이크가 실제로 열렸다. 말을 안 해도 브라우저가 보내는 신호다. */
     audioStart() { this.onaudiostart?.(); }
     speechStart() { this.onspeechstart?.(); }
+    speechEnd() { this.onspeechend?.(); }
     end() { this.onend?.(); }
   }
 
@@ -96,10 +97,10 @@ function listen() {
   return { handle, state };
 }
 
-test('휴대폰은 continuous 를 끄고 발화마다 다시 켜서 말한 내용을 한 번씩 받는다', () => {
+test('Android Chrome은 continuous로 요청하고 실제 종료 뒤에만 다시 켠다', () => {
   withDictation({ userAgent: ANDROID_CHROME, maxTouchPoints: 5 }, ({ recognizers, current, flush }) => {
     const { handle, state } = listen();
-    assert.equal(current().continuous, false);
+    assert.equal(current().continuous, true);
     assert.equal(current().interimResults, true);
 
     // 가설은 interim 한 칸을 고쳐 쓰고, 발화가 끝나면 final 이 한 번 온다
@@ -113,7 +114,7 @@ test('휴대폰은 continuous 를 끄고 발화마다 다시 켜서 말한 내�
     current().end();
     flush();
     assert.equal(recognizers.length, 2);
-    assert.equal(current().continuous, false);
+    assert.equal(current().continuous, true);
     current().send([PENDING('every morning')]);
     assert.deepEqual(state.draft, { committed: 'I like running', interim: 'every morning' });
 
@@ -298,4 +299,48 @@ test('다시 켜기가 거절되면 조금 더 기다렸다 다시 해 본다', 
     current().send([FINAL('every morning')]);
     assert.equal(state.draft.committed, 'I go jogging every morning');
   }, { startFails: (count) => count === 2 });
+});
+
+
+test('Android 누적 final 가설을 교체하며 수정된 단어도 중복 없이 보존한다', () => {
+  withDictation({ userAgent: ANDROID_CHROME }, ({ current, flush }) => {
+    const { handle, state } = listen();
+    current().send([FINAL('I')]);
+    current().send([FINAL('I'), FINAL('I goat')]);
+    current().send([FINAL('I'), FINAL('I goat'), FINAL('I go to the gym')]);
+    assert.equal(state.draft.committed, 'I go to the gym');
+    current().send([FINAL('I'), FINAL('I goat'), FINAL('I go to the gym')]);
+    assert.equal(state.draft.committed, 'I go to the gym');
+    handle.stop(); current().send([FINAL('I'), FINAL('I goat'), FINAL('I go to the gym every morning')]);
+    current().end(); flush();
+    assert.equal(state.draft.committed, 'I go to the gym every morning');
+  });
+});
+
+test('Android 실제 반복 단어와 별도 세션의 같은 문장은 삭제하지 않는다', () => {
+  withDictation({ userAgent: ANDROID_CHROME }, ({ current, flush }) => {
+    const { handle, state } = listen();
+    current().send([FINAL('very'), FINAL('very very good')]);
+    assert.equal(state.draft.committed, 'very very good'); current().end(); flush();
+    current().send([FINAL('very very good')]); handle.stop(); current().end();
+    assert.equal(state.draft.committed, 'very very good very very good');
+  });
+});
+
+test('Android 문장 사이 speechend만으로는 stop이나 새 start를 호출하지 않는다', () => {
+  withDictation({ userAgent: ANDROID_CHROME }, ({ current, recognizers, flush }) => {
+    const { handle, state } = listen();
+    current().audioStart(); current().speechStart(); current().send([FINAL('I enjoy running')]);
+    current().speechEnd(); flush();
+    assert.equal(recognizers.length, 1); assert.equal(current().stopped, false);
+    current().speechStart(); current().send([FINAL('I enjoy running'), FINAL('I enjoy running every morning')]);
+    assert.equal(state.draft.committed, 'I enjoy running every morning');
+    handle.abort();
+  });
+});
+
+test('iPhone은 기존 단발 받아쓰기 설정을 유지한다', () => {
+  withDictation({ userAgent: 'Mozilla/5.0 (iPhone) Version/18.0 Mobile Safari/605.1' }, ({ current }) => {
+    const { handle } = listen(); assert.equal(current().continuous, false); handle.abort();
+  });
 });

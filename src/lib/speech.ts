@@ -351,21 +351,11 @@ const MAX_START_RETRIES = 3;
  */
 
 /*
- * continuous 는 데스크톱에서만 켠다.
- *
- * 안드로이드 크롬은 continuous 를 켜면 인식 중인 가설이 올 때마다 그것을 final 로
- * 굳혀 results 에 새 칸으로 쌓는다(Chromium SpeechRecognitionImpl.handleResults).
- * 가설은 발화 앞부분을 품은 채 자라므로 한 발화가 "I", "I like", "I like running"
- * 세 칸의 확정 결과가 되고, 조각을 잇는 순간 같은 말이 여러 벌 쌓인다.
- *
- * continuous 를 끄면 가설은 interim 으로 오고 final 은 발화 끝에 한 번만 온다.
- * 표준이 continuous 가 꺼진 세션에 final 을 하나까지만 허용하기 때문이다. 안드로이드는
- * 켜 두어도 결과를 한 번 내면 세션을 닫으므로 끈다고 잃는 것이 없고, 끊긴 뒤 이어
- * 받는 일은 원래부터 onend 의 재시작이 맡고 있었다. 아이폰·태블릿도 같은 방식으로
- * 받아, 기기마다 continuous 를 어떻게 흉내 내는지에 기대지 않는다.
- *
- * 한 세션 안에서 발화를 겹치지 않는 조각으로 나눠 주는 데스크톱은 켜 둔다.
- * 발화 사이에 다시 켜느라 말을 흘릴 일이 없다.
+ * Android Chrome 실험: continuous=true로 시스템 dictation mode를 요청한다.
+ * Chromium Android는 provisional 가설도 final로 표시해 results에 쌓는다.
+ * 이 칸들은 독립 문장이 아니라 같은 발화의 수정된 전체 스냅샷이므로 최신 칸으로
+ * 현재 세션 텍스트를 교체한다. 이전 세션 텍스트에는 기존 joinTranscript만 적용한다.
+ * iOS 및 PC의 결과 처리와 설정은 유지한다.
  */
 
 /**
@@ -429,7 +419,16 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
   if (!Ctor) return null;
   liveDictation?.abort();
   const desktop = isDesktopAgent(window.navigator);
-  const continuous = desktop;
+  const androidContinuous = !desktop && /Android/i.test(window.navigator.userAgent ?? "")
+    && /Chrome\//i.test(window.navigator.userAgent ?? "");
+  const continuous = desktop || androidContinuous;
+  const debugEnabled = androidContinuous
+    && window.location?.hostname.includes("git-codex-mobile-continuous")
+    && new URLSearchParams(window.location.search).get("speechDebug") === "1";
+  let starts = 0;
+  const trace = (event: string, detail?: string | number) => {
+    if (debugEnabled) console.info("[YUMIOPIC speech]", { event, starts, at: Date.now(), detail });
+  };
   const restartDelayMs = desktop ? RESTART_DELAY_MS : MOBILE_RESTART_DELAY_MS;
 
   /** 이 세션이 돌려준 손잡이. 자리를 내놓을 때 저것이 나인지 보는 데 쓴다. */
@@ -575,12 +574,21 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
           clearAudioTimer();
         }
       }
-      chunks = next;
+      // Android dictation 가설("I", "I goat", "I go to...")은 이어 붙이지 않는다.
+      // 단어 겹침 제거를 하지 않으므로 실제 반복과 세션 사이 반복 문장은 보존된다.
+      if (androidContinuous) {
+        const latest = [...next].reverse().find((chunk) => chunk.transcript.trim());
+        if (latest) chunks = [latest];
+      } else {
+        chunks = next;
+      }
+      trace("result", results.length);
       emit();
     };
 
     recognition.onerror = (event) => {
       const code = (event as Event & { error?: string }).error ?? "unknown";
+      trace("error", code);
       // 말을 고르는 동안 흔히 나는 값이라 알리지 않는다. onend 가 알아서 다시 켠다.
       if (code === "no-speech" || code === "aborted") return;
       if (code === "not-allowed" || code === "service-not-allowed" || code === "audio-capture") {
@@ -590,6 +598,7 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
     };
 
     recognition.onend = () => {
+      trace("end");
       // 켜자마자 아무것도 못 받고 끝났는지 본다. 조용해서 끝난 세션은 몇 초를 버틴다.
       const quick = !sessionHeard && Date.now() - sessionStartedAt < QUICK_END_MS;
       quickEnds = quick ? quickEnds + 1 : 0;
@@ -644,6 +653,8 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
       sessionHeard = false;
       active = create();
       active.start();
+      starts += 1;
+      trace("start");
       startRetries = 0;
       setActivity(micOpened ? "listening" : "starting");
       armAudioTimer();
@@ -673,6 +684,8 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
     sessionStartedAt = Date.now();
     active = create();
     active.start();
+    starts += 1;
+    trace("start");
   } catch {
     detach(active);
     return null;
@@ -694,6 +707,7 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
         return;
       }
       try {
+        trace("stop");
         active.stop();
       } catch {
         foldRun();
