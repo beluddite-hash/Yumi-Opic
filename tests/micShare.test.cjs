@@ -21,15 +21,15 @@ test('노트북 브라우저는 받아쓰기와 녹음을 함께 켠다', () => 
   assert.equal(guessMicMode({ userAgent: MAC_SAFARI, maxTouchPoints: 0 }), 'share');
 });
 
-test('휴대폰은 브라우저 받아쓰기 대신 AI 전사용 녹음을 켠다', () => {
-  assert.equal(guessMicMode({ userAgent: ANDROID_CHROME, maxTouchPoints: 5 }), 'recording-only');
-  assert.equal(guessMicMode({ userAgent: IPHONE_SAFARI, maxTouchPoints: 5 }), 'recording-only');
+test('휴대폰은 기존 브라우저 실시간 받아쓰기만 켠다', () => {
+  assert.equal(guessMicMode({ userAgent: ANDROID_CHROME, maxTouchPoints: 5 }), 'dictation-only');
+  assert.equal(guessMicMode({ userAgent: IPHONE_SAFARI, maxTouchPoints: 5 }), 'dictation-only');
   // UA 문자열을 감추는 브라우저는 userAgentData 로 알린다
-  assert.equal(guessMicMode({ userAgent: DESKTOP_CHROME, userAgentData: { mobile: true } }), 'recording-only');
+  assert.equal(guessMicMode({ userAgent: DESKTOP_CHROME, userAgentData: { mobile: true } }), 'dictation-only');
 });
 
 test('데스크톱 사파리를 자처하는 아이패드도 가려낸다', () => {
-  assert.equal(guessMicMode({ userAgent: MAC_SAFARI, maxTouchPoints: 5 }), 'recording-only');
+  assert.equal(guessMicMode({ userAgent: MAC_SAFARI, maxTouchPoints: 5 }), 'dictation-only');
 });
 
 const WINDOWS_EDGE = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0';
@@ -79,17 +79,17 @@ test('윈도 노트북은 예전에 받아쓰기만 켜기로 남긴 값이 있�
   });
 });
 
-test('데스크톱이 아닌 기기는 겪어 보고 남긴 값을 그대로 따른다', () => {
+test('기존 비모바일 설정은 유지하고 휴대폰은 받아쓰기만 켠다', () => {
   // 데스크톱 사이트를 요청한 안드로이드 태블릿: 겪어 보고 받아쓰기만 켜기로 했다
   withBrowser({ userAgent: LINUX_DESKTOP, maxTouchPoints: 5 }, 'recording-only', () => {
     assert.equal(loadMicMode(), 'recording-only');
   });
   // 휴대폰에서 녹음도 함께 켜보기를 눌렀다
   withBrowser({ userAgent: ANDROID_CHROME, maxTouchPoints: 5 }, 'share', () => {
-    assert.equal(loadMicMode(), 'recording-only');
+    assert.equal(loadMicMode(), 'dictation-only');
   });
   withBrowser({ userAgent: ANDROID_CHROME, maxTouchPoints: 5 }, null, () => {
-    assert.equal(loadMicMode(), 'recording-only');
+    assert.equal(loadMicMode(), 'dictation-only');
   });
 });
 
@@ -128,10 +128,10 @@ test('화면이 멈췄다 돌아온 긴 간격은 말한 시간으로 세지 않
   assert.equal(isMicConflict(probe), false);
 });
 
-test('모바일의 이전 dictation-only 설정도 녹음 후 AI 전사로 전환한다', () => {
+test('모바일은 저장된 설정과 무관하게 실시간 받아쓰기로 복구한다', () => {
   for (const userAgent of [ANDROID_CHROME, IPHONE_SAFARI]) {
     for (const saved of ['dictation-only', 'share', 'recording-only']) {
-      withBrowser({ userAgent, maxTouchPoints: 5 }, saved, () => assert.equal(loadMicMode(), 'recording-only'));
+      withBrowser({ userAgent, maxTouchPoints: 5 }, saved, () => assert.equal(loadMicMode(), 'dictation-only'));
     }
   }
 });

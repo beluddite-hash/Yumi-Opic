@@ -1,6 +1,6 @@
 "use client";
 
-/** Mobile devices reserve the microphone for recording, then transcribe with AI. */
+/** 모바일은 브라우저 실시간 받아쓰기, PC는 현재 녹음·전사 경로를 유지한다. */
 export type MicMode = "share" | "recording-only" | "dictation-only";
 
 const MIC_MODE_KEY = "yumi-opic:mic-mode";
@@ -11,14 +11,14 @@ interface AgentLike {
   userAgentData?: { mobile?: boolean };
 }
 
-/** 휴대폰·태블릿은 녹음 후 AI 전사, 데스크톱은 기존 병행 녹음 방식. */
+/** 휴대폰·태블릿은 기존 받아쓰기만 켜고, 데스크톱은 기존 병행 녹음 방식. */
 export function guessMicMode(agent: AgentLike | undefined): MicMode {
   if (!agent) return "share";
-  if (agent.userAgentData?.mobile === true) return "recording-only";
+  if (agent.userAgentData?.mobile === true) return "dictation-only";
   const ua = agent.userAgent ?? "";
-  if (/Android|iPhone|iPod|iPad|Mobile|Silk|Kindle|Opera Mini/i.test(ua)) return "recording-only";
+  if (/Android|iPhone|iPod|iPad|Mobile|Silk|Kindle|Opera Mini/i.test(ua)) return "dictation-only";
   // 데스크톱 사파리를 자처하는 아이패드
-  if (/Macintosh/i.test(ua) && (agent.maxTouchPoints ?? 0) > 1) return "recording-only";
+  if (/Macintosh/i.test(ua) && (agent.maxTouchPoints ?? 0) > 1) return "dictation-only";
   return "share";
 }
 
@@ -44,7 +44,7 @@ export function isDesktopAgent(agent: AgentLike | undefined): boolean {
 export function loadMicMode(): MicMode {
   if (typeof window === "undefined") return "share";
   const guessed = guessMicMode(window.navigator);
-  if (guessed === "recording-only") return guessed;
+  if (guessed === "dictation-only") return guessed;
   if (isDesktopAgent(window.navigator)) return "share";
   try {
     const saved = window.localStorage.getItem(MIC_MODE_KEY);
