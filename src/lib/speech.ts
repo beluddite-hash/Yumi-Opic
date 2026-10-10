@@ -330,6 +330,9 @@ const RESTART_DELAY_MS = 300;
  * 답변 한 개에서 낱말 여럿이 사라진다.
  */
 const MOBILE_RESTART_DELAY_MS = 120;
+/** 결과 없는 종료·오류가 반복될 때 모바일 시스템 시작음을 계속 유발하지 않는다. */
+const MOBILE_EMPTY_RESTART_DELAY_MS = 600;
+const MAX_MOBILE_EMPTY_ENDS = 4;
 /** 마이크가 아예 안 잡히는 환경에서 무한 재시작을 막는 한도. */
 const MAX_RESTARTS = 60;
 /**
@@ -461,6 +464,8 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
   let startRetries = 0;
   let sessionStartedAt = 0;
   let sessionHeard = false;
+  let sessionError = false;
+  let emptyMobileEnds = 0;
   let audioTimer = 0;
   let activity: DictationActivity | null = null;
   let detachVisibility: (() => void) | null = null;
@@ -572,6 +577,7 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
           restarts = 0;
           heard = true;
           sessionHeard = true;
+          if (!desktop) emptyMobileEnds = 0;
           clearAudioTimer();
         }
       }
@@ -580,6 +586,8 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
     };
 
     recognition.onerror = (event) => {
+      if (!desktop && (dead || ended)) return;
+      sessionError = true;
       const code = (event as Event & { error?: string }).error ?? "unknown";
       // 말을 고르는 동안 흔히 나는 값이라 알리지 않는다. onend 가 알아서 다시 켠다.
       if (code === "no-speech" || code === "aborted") return;
@@ -603,6 +611,15 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
         finish();
         return;
       }
+      // 정상 발화는 기존 120ms로 이어 받는다. 빈 세션·오류만 점진적으로 늦춘다.
+      if (!desktop) {
+        emptyMobileEnds = !sessionHeard || sessionError ? emptyMobileEnds + 1 : 0;
+        if (emptyMobileEnds >= MAX_MOBILE_EMPTY_ENDS) {
+          handlers.onError?.("mic-silent");
+          finish();
+          return;
+        }
+      }
       if (quickEnds >= MAX_QUICK_ENDS) {
         // 인식기가 켜진 척만 하고 곧바로 닫는다. 다시 켜 봐야 같은 일이 되풀이되므로
         // 여기서 멈추고 알린다. 사용자가 화면에서 다시 켜면 된다.
@@ -621,7 +638,9 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
       // 전이면 다시 켠다.
       restarts += 1;
       setActivity("starting");
-      scheduleRestart(restartDelayMs);
+      scheduleRestart(!desktop && emptyMobileEnds > 0
+        ? MOBILE_EMPTY_RESTART_DELAY_MS * 2 ** (emptyMobileEnds - 1)
+        : restartDelayMs);
     };
 
     return recognition;
@@ -629,7 +648,7 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
 
   /** 새 인식 세션을 연다. 화면이 꺼져 있으면 켜지 않고 돌아올 때를 기다린다. */
   const launch = () => {
-    if (dead || closing) {
+    if (dead || closing || (!desktop && ended)) {
       finish();
       return;
     }
@@ -639,9 +658,11 @@ export function startDictation(handlers: DictationHandlers): DictationHandle | n
       setActivity("paused");
       return;
     }
+    if (!desktop && active) return;
     try {
       sessionStartedAt = Date.now();
       sessionHeard = false;
+      sessionError = false;
       active = create();
       active.start();
       startRetries = 0;

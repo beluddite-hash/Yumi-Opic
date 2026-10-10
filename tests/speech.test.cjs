@@ -42,6 +42,7 @@ function withDictation(navigator, run, options = {}) {
     /** 마이크가 실제로 열렸다. 말을 안 해도 브라우저가 보내는 신호다. */
     audioStart() { this.onaudiostart?.(); }
     speechStart() { this.onspeechstart?.(); }
+    fail(error) { this.onerror?.({ error }); }
     end() { this.onend?.(); }
   }
 
@@ -298,4 +299,59 @@ test('다시 켜기가 거절되면 조금 더 기다렸다 다시 해 본다', 
     current().send([FINAL('every morning')]);
     assert.equal(state.draft.committed, 'I go jogging every morning');
   }, { startFails: (count) => count === 2 });
+});
+
+
+test('모바일 무음 종료는 600/1200/2400ms로 늦추고 네 번째에 멈추며 답변은 남긴다', () => {
+  const previousNow = Date.now;
+  let now = 0;
+  Date.now = () => now;
+  try {
+    withDictation({ userAgent: ANDROID_CHROME, maxTouchPoints: 5 }, ({ recognizers, current, flush, delays }) => {
+      const { state } = listen();
+      current().send([FINAL('My saved answer')]); current().end(); flush();
+      for (const delay of [600, 1200, 2400]) {
+        current().audioStart(); now += 5000;
+        current().fail('no-speech'); current().end();
+        assert.deepEqual(delays(), [delay]); flush();
+      }
+      current().audioStart(); now += 5000; current().fail('no-speech'); current().end();
+      assert.equal(state.ended, true);
+      assert.equal(state.draft.committed, 'My saved answer');
+      assert.deepEqual(state.errors, ['mic-silent']);
+      const count = recognizers.length; flush(); assert.equal(recognizers.length, count);
+    });
+  } finally { Date.now = previousNow; }
+});
+
+test('모바일 정상 발화가 돌아오면 재시작 지연을 초기화하고 중복 없이 잇는다', () => {
+  withDictation({ userAgent: ANDROID_CHROME }, ({ current, flush, delays }) => {
+    const { handle, state } = listen();
+    current().audioStart(); current().fail('no-speech'); current().end();
+    assert.deepEqual(delays(), [600]); flush();
+    current().send([PENDING('I like'), PENDING('')]);
+    current().send([FINAL('I like running')]); current().send([FINAL('I like running')]);
+    current().end(); assert.deepEqual(delays(), [120]); flush();
+    current().send([FINAL('every morning')]); handle.stop(); current().end(); flush();
+    assert.equal(state.draft.committed, 'I like running every morning');
+    assert.equal(state.ended, true);
+  });
+});
+
+test('모바일 재시작 대기 중 stop 하면 더 켜지지 않고 이전 텍스트를 보존한다', () => {
+  withDictation({ userAgent: ANDROID_CHROME }, ({ current, recognizers, flush }) => {
+    const { handle, state } = listen();
+    current().send([FINAL('Keep this answer')]); current().end(); flush();
+    current().audioStart(); current().fail('no-speech'); current().end();
+    const count = recognizers.length; handle.stop(); flush();
+    assert.equal(recognizers.length, count); assert.equal(state.draft.committed, 'Keep this answer');
+    assert.equal(state.ended, true);
+  });
+});
+
+test('PC 무음 종료는 기존 300ms 재시작을 유지한다', () => {
+  withDictation({ userAgent: DESKTOP_CHROME }, ({ current, delays }) => {
+    const { handle } = listen(); current().audioStart(); current().fail('no-speech'); current().end();
+    assert.deepEqual(delays(), [300]); handle.abort();
+  });
 });
