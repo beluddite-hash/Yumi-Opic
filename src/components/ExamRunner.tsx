@@ -814,9 +814,11 @@ export default function ExamRunner({
     const dictationOn = canDictate ? startDictationFor(targetSlot) : false;
     if (!canDictate) baseRef.current = answersRef.current[targetSlot] ?? "";
 
-    // 모바일은 녹음만 실행하고 완료 후 AI로 전사한다.
-    const recordingOn = recordingAvailable;
-    if (!canDictate && !recordingOn) setMicError("이 브라우저에서 녹음을 사용할 수 없습니다. 마이크 권한을 확인하거나 다른 브라우저에서 열어 주세요.");
+    // 모바일에서는 녹음이 마이크를 가져가지 않도록 기존 받아쓰기만 실행한다.
+    const recordingOn = recordingAvailable && micModeRef.current !== "dictation-only";
+    if (!canDictate && !recordingOn) setMicError(micModeRef.current === "dictation-only"
+      ? "이 브라우저는 음성 받아쓰기를 지원하지 않습니다. 음성인식을 지원하는 브라우저에서 열거나 직접 입력해 주세요."
+      : "이 브라우저에서 녹음을 사용할 수 없습니다. 마이크 권한을 확인하거나 다른 브라우저에서 열어 주세요.");
     if (recordingOn) void beginAudioCapture(targetSlot);
     setListening(dictationOn || recordingOn);
   }, [beginAudioCapture, startDictationFor, stopAnswerCapture, recordingAvailable]);
