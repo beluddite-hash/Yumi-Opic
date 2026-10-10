@@ -5,5 +5,5 @@
     "skipLibCheck": true, "outDir": ".test-build", "rootDir": "src",
     "types": [], "lib": ["ES2020", "DOM"]
   },
-  "include": ["src/lib/types.ts", "src/lib/exam.ts", "src/lib/answers.ts", "src/lib/feedback.ts", "src/lib/answerDiff.ts", "src/lib/readAloud.ts", "src/lib/feedbackBatch.ts","src/lib/transcript.ts", "src/lib/speech.ts", "src/lib/wakeLock.ts", "src/lib/micShare.ts", "src/lib/theme.ts", "src/lib/storage.ts", "src/lib/history.ts", "src/lib/nav.ts", "src/lib/cost.ts", "src/lib/expressions.ts", "src/lib/report.ts", "src/lib/questionAudio.ts", "src/lib/mp3.ts", "src/data/survey-bank.ts", "src/data/survey-form.ts", "src/data/index.ts"]
+  "include": ["src/lib/mobileMicDiagnostic.ts","src/lib/types.ts", "src/lib/exam.ts", "src/lib/answers.ts", "src/lib/feedback.ts", "src/lib/answerDiff.ts", "src/lib/readAloud.ts", "src/lib/feedbackBatch.ts","src/lib/transcript.ts", "src/lib/speech.ts", "src/lib/wakeLock.ts", "src/lib/micShare.ts", "src/lib/theme.ts", "src/lib/storage.ts", "src/lib/history.ts", "src/lib/nav.ts", "src/lib/cost.ts", "src/lib/expressions.ts", "src/lib/report.ts", "src/lib/questionAudio.ts", "src/lib/mp3.ts", "src/data/survey-bank.ts", "src/data/survey-form.ts", "src/data/index.ts"]
 }
