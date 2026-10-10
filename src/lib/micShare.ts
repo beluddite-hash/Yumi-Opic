@@ -43,15 +43,17 @@ export function isDesktopAgent(agent: AgentLike | undefined): boolean {
 
 export function loadMicMode(): MicMode {
   if (typeof window === "undefined") return "share";
-  const guessed = guessMicMode(window.navigator);
-  if (guessed === "dictation-only") return guessed;
+  // 9월 23일 이전 방식: 모바일은 녹음을 열지 않고 Web Speech 받아쓰기를 사용.
+  // 과거 저장된 "recording-only"/"share" 값이 모바일 마이크를 가져가지 않도록 한다.
+  if (guessMicMode(window.navigator) === "dictation-only") return "dictation-only";
+  // 데스크톱은 기존 AI 녹음·전사를 유지하며 이전 저장 설정에 영향받지 않는다.
   if (isDesktopAgent(window.navigator)) return "share";
   try {
     const saved = window.localStorage.getItem(MIC_MODE_KEY);
     if (saved === "dictation-only" || saved === "recording-only") return "recording-only";
     if (saved === "share") return "share";
   } catch { /* Storage may be unavailable. */ }
-  return guessed;
+  return guessMicMode(window.navigator);
 }
 
 export function saveMicMode(mode: MicMode): void {
